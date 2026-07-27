@@ -1,41 +1,17 @@
-# Corredora DF Platform
+# 🦋 Corredora DF Platform
 
-Monorepo da plataforma Corredora DF, usando Node.js, pnpm workspaces e Turborepo.
+Uma plataforma moderna para corredores, eventos, parceiros e comunidade.
 
-## Requisitos
+## Stack
 
-- Node.js 24
-- pnpm 11
-- Git
+- Next.js
+- NestJS
+- PostgreSQL
+- Prisma
 - Docker
-- Docker Compose
+- Turborepo
+- Tailwind CSS
 
-## Primeiros Passos
+## Status
 
-Instale as dependencias:
-
-```bash
-pnpm install
-```
-
-Execute os comandos do workspace com:
-
-```bash
-pnpm turbo <comando>
-```
-
-## Estrutura
-
-```text
-apps/
-  # Aplicacoes da plataforma
-
-packages/
-  # Pacotes compartilhados
-```
-
-Os pacotes do monorepo sao configurados em `pnpm-workspace.yaml`.
-
-## Scripts
-
-Os scripts principais serao adicionados conforme os apps e pacotes forem criados.
+🚧 Em desenvolvimento

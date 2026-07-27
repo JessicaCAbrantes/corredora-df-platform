@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-labelledby="title">
+  <title id="title">Corrida Noturna do Parque</title>
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="55%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#night)"/>
+  <circle cx="120" cy="80" r="4" fill="#E2E8F0"/>
+  <circle cx="220" cy="50" r="3" fill="#CBD5E1"/>
+  <circle cx="480" cy="70" r="3" fill="#E2E8F0"/>
+  <circle cx="620" cy="40" r="2.5" fill="#CBD5E1"/>
+  <circle cx="700" cy="95" r="3" fill="#E2E8F0"/>
+  <circle cx="680" cy="90" r="36" fill="#FEF08A" opacity="0.85"/>
+  <ellipse cx="400" cy="410" rx="340" ry="70" fill="#14532D" opacity="0.9"/>
+  <path d="M80 390 Q400 300 720 390" fill="none" stroke="#FACC15" stroke-width="6" stroke-linecap="round" opacity="0.75"/>
+  <circle cx="200" cy="360" r="10" fill="#FDE047"/>
+  <circle cx="360" cy="340" r="10" fill="#FDE047"/>
+  <circle cx="520" cy="350" r="10" fill="#FDE047"/>
+  <circle cx="640" cy="370" r="10" fill="#FDE047"/>
+</svg>

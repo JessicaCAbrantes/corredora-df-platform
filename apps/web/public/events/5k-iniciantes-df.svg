@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-labelledby="title">
+  <title id="title">5K Iniciantes DF</title>
+  <defs>
+    <linearGradient id="morning" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#BAE6FD"/>
+      <stop offset="50%" stop-color="#A7F3D0"/>
+      <stop offset="100%" stop-color="#FEF9C3"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#morning)"/>
+  <circle cx="140" cy="100" r="48" fill="#FDE047"/>
+  <rect x="0" y="360" width="800" height="140" fill="#86EFAC"/>
+  <path d="M0 360 Q200 300 400 360 T800 360 L800 500 L0 500 Z" fill="#4ADE80" opacity="0.55"/>
+  <rect x="90" y="300" width="18" height="90" fill="#166534"/>
+  <circle cx="99" cy="280" r="36" fill="#15803D"/>
+  <rect x="650" y="290" width="18" height="100" fill="#166534"/>
+  <circle cx="659" cy="270" r="40" fill="#16A34A"/>
+  <path d="M120 420 H680" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="280" cy="410" r="16" fill="#0F766E"/>
+  <circle cx="360" cy="405" r="16" fill="#0F766E"/>
+  <circle cx="440" cy="412" r="16" fill="#0F766E"/>
+</svg>

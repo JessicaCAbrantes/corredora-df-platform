@@ -1,0 +1,134 @@
+// Events listing domain — GET /api/v1/events
+// Location: apps/api/prisma (ADR-006)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventLifecycleStatus {
+  active
+  cancelled
+  completed
+}
+
+enum EventRegistrationStatus {
+  open
+  closed
+  upcoming
+}
+
+/// HTTP values use hyphens / leading digits; Prisma identifiers use @map.
+enum EventCategory {
+  marathon
+  half_marathon @map("half-marathon")
+  k5            @map("5k")
+  k10           @map("10k")
+  trail
+}
+
+model Event {
+  id                 String                   @id
+  name               String
+  slug               String                   @unique
+  date               DateTime
+  city               String
+  category           EventCategory
+  distance           String
+  status             EventLifecycleStatus
+  registrationStatus EventRegistrationStatus  @map("registration_status")
+  coverImage         String                   @map("cover_image")
+  priceAmount        Decimal?                 @map("price_amount") @db.Decimal(10, 2)
+  priceCurrency      String?                  @map("price_currency")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+
+  registrations EventRegistration[]
+  kit           Kit?
+
+  @@index([date])
+  @@index([status])
+  @@index([category])
+  @@index([city])
+  @@index([createdAt])
+  @@index([registrationStatus])
+  @@map("events")
+}
+
+/// Kits MVP — catalog minimally linked to Event (1:1). No pickup/shirtSize in this cycle.
+model Kit {
+  id        String   @id
+  eventId   String   @unique @map("event_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("kits")
+}
+
+/// MVP registration row — userId is an opaque string (no FK to User yet; known debt).
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String   @map("event_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@map("event_registrations")
+}
+
+/// Auth MVP — seeded users only; no public registration in this cycle.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+/// Partners MVP — public catalog for Home logo wall. No benefits/CRUD in this cycle.
+model Partner {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  category  String?
+  logo      String?
+  website   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  coupons Coupon[]
+
+  @@index([active])
+  @@index([name])
+  @@index([createdAt])
+  @@map("partners")
+}
+
+/// Coupons MVP — public Home teaser catalog. No code/redeem in this cycle.
+model Coupon {
+  id            String    @id @default(cuid())
+  title         String
+  discountLabel String    @map("discount_label")
+  expiresAt     DateTime? @map("expires_at")
+  active        Boolean   @default(true)
+  partnerId     String?   @map("partner_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  partner Partner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+
+  @@index([active])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@index([partnerId])
+  @@map("coupons")
+}

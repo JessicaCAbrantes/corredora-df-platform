@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-labelledby="title">
+  <title id="title">Meia Maratona de Bras�lia</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDBA74"/>
+      <stop offset="45%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#99F6E4"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#sky)"/>
+  <circle cx="640" cy="110" r="54" fill="#F97316" opacity="0.9"/>
+  <rect x="0" y="320" width="800" height="180" fill="#0F766E"/>
+  <rect x="340" y="160" width="120" height="200" fill="#134E4A"/>
+  <polygon points="280,360 400,210 520,360" fill="#115E59"/>
+  <rect x="60" y="380" width="680" height="28" fill="#CCFBF1" opacity="0.85"/>
+  <circle cx="180" cy="370" r="14" fill="#134E4A"/>
+  <circle cx="250" cy="365" r="14" fill="#134E4A"/>
+  <circle cx="320" cy="368" r="14" fill="#134E4A"/>
+</svg>
