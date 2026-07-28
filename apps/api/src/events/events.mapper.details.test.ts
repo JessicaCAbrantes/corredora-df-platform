@@ -5,6 +5,7 @@
 import {
   EventCategory,
   EventLifecycleStatus,
+  EventRegistrationMode,
   EventRegistrationStatus,
   type Event,
 } from "@prisma/client";
@@ -28,6 +29,7 @@ function baseEvent(overrides: Partial<Event> = {}): Event {
     distance: "21K",
     status: EventLifecycleStatus.active,
     registrationStatus: EventRegistrationStatus.open,
+    registrationMode: EventRegistrationMode.internal,
     coverImage: "https://example.com/events/meia.jpg",
     priceAmount: new Decimal(149),
     priceCurrency: "BRL",
@@ -62,6 +64,7 @@ function run(): void {
       priceAmount: null,
       priceCurrency: null,
       registrationStatus: EventRegistrationStatus.upcoming,
+    registrationMode: EventRegistrationMode.internal,
     }),
   );
   assert(free.price === null, "free price null");
@@ -72,6 +75,7 @@ function run(): void {
     baseEvent({
       status: EventLifecycleStatus.cancelled,
       registrationStatus: EventRegistrationStatus.open,
+    registrationMode: EventRegistrationMode.internal,
     }),
   );
   assert(cancelled.registrationStatus === "closed", "cancelled → closed");
@@ -81,6 +85,7 @@ function run(): void {
     baseEvent({
       status: EventLifecycleStatus.completed,
       registrationStatus: EventRegistrationStatus.open,
+    registrationMode: EventRegistrationMode.internal,
     }),
   );
   assert(completed.registrationStatus === "closed", "completed → closed");

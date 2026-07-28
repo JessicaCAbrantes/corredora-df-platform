@@ -7,6 +7,7 @@ import { HttpException, HttpStatus } from "@nestjs/common";
 import {
   EventCategory,
   EventLifecycleStatus,
+  EventRegistrationMode,
   EventRegistrationStatus,
   type Event,
 } from "@prisma/client";
@@ -34,6 +35,7 @@ function baseEvent(overrides: Partial<Event> = {}): Event {
     distance: "21K",
     status: EventLifecycleStatus.active,
     registrationStatus: EventRegistrationStatus.open,
+    registrationMode: EventRegistrationMode.internal,
     coverImage: "https://example.com/events/meia.jpg",
     priceAmount: new Decimal(149),
     priceCurrency: "BRL",

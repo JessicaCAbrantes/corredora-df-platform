@@ -6,6 +6,7 @@ import { HttpException, HttpStatus } from "@nestjs/common";
 import {
   EventCategory,
   EventLifecycleStatus,
+  EventRegistrationMode,
   EventRegistrationStatus,
   Prisma,
   type Event,
@@ -33,6 +34,7 @@ function baseEvent(overrides: Partial<Event> = {}): Event {
     distance: "21K",
     status: EventLifecycleStatus.active,
     registrationStatus: EventRegistrationStatus.open,
+    registrationMode: EventRegistrationMode.internal,
     coverImage: "https://example.com/events/meia.jpg",
     priceAmount: new Decimal(149),
     priceCurrency: "BRL",
@@ -162,6 +164,7 @@ async function run(): Promise<void> {
           baseEvent({
             id: "evt_03_5k_ini",
             registrationStatus: EventRegistrationStatus.upcoming,
+    registrationMode: EventRegistrationMode.internal,
           }),
       },
       eventRegistration: {
@@ -185,6 +188,7 @@ async function run(): Promise<void> {
           baseEvent({
             id: "evt_02_noturna",
             registrationStatus: EventRegistrationStatus.closed,
+    registrationMode: EventRegistrationMode.internal,
           }),
       },
       eventRegistration: {
@@ -209,6 +213,7 @@ async function run(): Promise<void> {
             id: "evt_07_cancelada",
             status: EventLifecycleStatus.cancelled,
             registrationStatus: EventRegistrationStatus.closed,
+    registrationMode: EventRegistrationMode.internal,
           }),
       },
       eventRegistration: {
@@ -233,6 +238,7 @@ async function run(): Promise<void> {
             id: "evt_06_taguatinga",
             status: EventLifecycleStatus.completed,
             registrationStatus: EventRegistrationStatus.closed,
+    registrationMode: EventRegistrationMode.internal,
           }),
       },
       eventRegistration: {

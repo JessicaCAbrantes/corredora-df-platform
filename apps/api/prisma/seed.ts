@@ -1,4 +1,4 @@
-import { PrismaClient, EventCategory, EventLifecycleStatus, EventRegistrationStatus } from "@prisma/client";
+import { PrismaClient, EventCategory, EventLifecycleStatus, EventRegistrationMode, EventRegistrationStatus } from "@prisma/client";
 import { hashPassword } from "../src/auth/password";
 
 const prisma = new PrismaClient();
@@ -27,6 +27,7 @@ const events = [
     coverImage: "https://example.com/events/meia-maratona-brasilia.jpg",
     priceAmount: 149,
     priceCurrency: "BRL",
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2026-01-10T10:00:00.000Z"),
   },
   {
@@ -42,6 +43,7 @@ const events = [
     coverImage: "https://example.com/events/corrida-noturna-parque.jpg",
     priceAmount: 89,
     priceCurrency: "BRL",
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2026-01-05T10:00:00.000Z"),
   },
   {
@@ -57,6 +59,7 @@ const events = [
     coverImage: "https://example.com/events/5k-iniciantes-df.jpg",
     priceAmount: null,
     priceCurrency: null,
+    registrationMode: EventRegistrationMode.external,
     createdAt: new Date("2026-02-01T10:00:00.000Z"),
   },
   {
@@ -72,6 +75,7 @@ const events = [
     coverImage: "https://example.com/events/maratona-plano-piloto.jpg",
     priceAmount: 219,
     priceCurrency: "BRL",
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2026-01-20T10:00:00.000Z"),
   },
   {
@@ -87,6 +91,7 @@ const events = [
     coverImage: "https://example.com/events/trail-chapada-imperial.jpg",
     priceAmount: 169,
     priceCurrency: "BRL",
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2026-03-01T10:00:00.000Z"),
   },
   {
@@ -102,6 +107,7 @@ const events = [
     coverImage: "https://example.com/events/10k-taguatinga.jpg",
     priceAmount: 79,
     priceCurrency: "BRL",
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2025-12-01T10:00:00.000Z"),
   },
   {
@@ -117,6 +123,7 @@ const events = [
     coverImage: "https://example.com/events/corrida-do-lago.jpg",
     priceAmount: 59,
     priceCurrency: "BRL",
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2025-11-10T10:00:00.000Z"),
   },
   {
@@ -132,6 +139,7 @@ const events = [
     coverImage: "https://example.com/events/5k-asa-norte.jpg",
     priceAmount: null,
     priceCurrency: null,
+    registrationMode: EventRegistrationMode.internal,
     createdAt: new Date("2026-03-15T10:00:00.000Z"),
   },
 ] as const;
@@ -292,6 +300,124 @@ async function seedCoupons(): Promise<void> {
   }
 }
 
+/** Deterministic blog posts for Home Blog MVP (no full article body). */
+const blogPosts = [
+  {
+    id: "blg_01_5k_tips",
+    title: "5 dicas para sua primeira corrida de 5K",
+    slug: "5-dicas-primeira-corrida-5k",
+    excerpt: "Preparação simples para estreantes no calendário do DF.",
+    category: "Treino" as string | null,
+    readingTimeMinutes: 5 as number | null,
+    publishedAt: new Date("2026-06-10T09:00:00.000Z"),
+    published: true,
+  },
+  {
+    id: "blg_02_first_race",
+    title: "Como se preparar para sua primeira prova",
+    slug: "como-se-preparar-primeira-prova",
+    excerpt: "Checklist prático do dia da prova para corredores do DF.",
+    category: "Eventos" as string | null,
+    readingTimeMinutes: 7 as number | null,
+    publishedAt: new Date("2026-06-18T09:00:00.000Z"),
+    published: true,
+  },
+  {
+    id: "blg_03_training_df",
+    title: "Treinos para correr melhor no DF",
+    slug: "treinos-para-correr-melhor-no-df",
+    excerpt: "Como adaptar o ritmo ao clima e ao relevo de Brasília.",
+    category: "Treino" as string | null,
+    readingTimeMinutes: 4 as number | null,
+    publishedAt: new Date("2026-07-01T09:00:00.000Z"),
+    published: true,
+  },
+  {
+    id: "blg_04_draft",
+    title: "Post em rascunho",
+    slug: "post-em-rascunho",
+    excerpt: "Artigo ainda não publicado — não deve aparecer na Home.",
+    category: "Nutrição" as string | null,
+    readingTimeMinutes: 3 as number | null,
+    publishedAt: null,
+    published: false,
+  },
+] as const;
+
+async function seedBlogPosts(): Promise<void> {
+  for (const post of blogPosts) {
+    await prisma.blogPost.upsert({
+      where: { id: post.id },
+      create: { ...post },
+      update: {
+        title: post.title,
+        slug: post.slug,
+        excerpt: post.excerpt,
+        category: post.category,
+        readingTimeMinutes: post.readingTimeMinutes,
+        publishedAt: post.publishedAt,
+        published: post.published,
+      },
+    });
+  }
+}
+
+/** Deterministic kit pickup offers for Home teaser (Phase 1 — no requests/payments). */
+const kitPickupServices = [
+  {
+    id: "kps_01_own_event",
+    eventId: "evt_01_meia",
+    title: "Retirada de kit",
+    serviceAvailable: true,
+    feeAmount: null as number | null,
+    feeCurrency: "BRL",
+    pickupLocation: "Asa Norte" as string | null,
+    pickupStartAt: new Date("2026-08-10T12:00:00.000Z"),
+    pickupEndAt: new Date("2026-08-12T21:00:00.000Z"),
+  },
+  {
+    id: "kps_02_third_party",
+    eventId: "evt_03_5k_ini",
+    title: "Retirada de kit (serviço Corredora DF)",
+    serviceAvailable: true,
+    feeAmount: 10 as number | null,
+    feeCurrency: "BRL",
+    pickupLocation: "Sede Corredora DF" as string | null,
+    pickupStartAt: new Date("2026-07-28T12:00:00.000Z"),
+    pickupEndAt: new Date("2026-07-30T21:00:00.000Z"),
+  },
+  {
+    id: "kps_03_unavailable",
+    eventId: "evt_04_maratona",
+    title: "Retirada de kit",
+    serviceAvailable: false,
+    feeAmount: 15 as number | null,
+    feeCurrency: "BRL",
+    pickupLocation: "Plano Piloto" as string | null,
+    pickupStartAt: new Date("2026-09-15T12:00:00.000Z"),
+    pickupEndAt: new Date("2026-09-17T21:00:00.000Z"),
+  },
+] as const;
+
+async function seedKitPickupServices(): Promise<void> {
+  for (const service of kitPickupServices) {
+    await prisma.kitPickupService.upsert({
+      where: { id: service.id },
+      create: { ...service },
+      update: {
+        eventId: service.eventId,
+        title: service.title,
+        serviceAvailable: service.serviceAvailable,
+        feeAmount: service.feeAmount,
+        feeCurrency: service.feeCurrency,
+        pickupLocation: service.pickupLocation,
+        pickupStartAt: service.pickupStartAt,
+        pickupEndAt: service.pickupEndAt,
+      },
+    });
+  }
+}
+
 async function main() {
   await seedAuthUser();
 
@@ -330,6 +456,8 @@ async function main() {
   await seedKits();
   await seedPartners();
   await seedCoupons();
+  await seedBlogPosts();
+  await seedKitPickupServices();
 }
 
 main()

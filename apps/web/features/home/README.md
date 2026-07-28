@@ -11,35 +11,23 @@ Compor a Home MVP com Navbar, Hero e seções de conteúdo + Footer.
 | **Featured Events** | `GET /api/v1/events` |
 | **Coupons** | `GET /api/v1/coupons` |
 | **Partners** | `GET /api/v1/partners` |
-| Kits Home / Blog | Mock |
+| **Kit Pickup Services** | `GET /api/v1/kit-pickup-services` |
+| **Blog** | `GET /api/v1/blog/posts` |
 | Hero | `@corredora/ui` defaults |
 
-## Fluxo (Cupons)
+## Fluxo (Kit Pickup)
 
 ```text
 HomePage
   ↓
-getCouponsList(buildHomeCouponsParams())
+getKitPickupServicesList(buildHomeKitPickupParams())
   ↓
-http-get-coupons (credentials: não)
+http-get-kit-pickup-services
   ↓
-Coupons → CouponCard[]
+Kits → KitCard[]
 ```
 
-## Estrutura
-
-```text
-HomePage
-├── Navbar
-├── Hero
-├── main#main-content
-│   ├── FeaturedEvents  ← API
-│   ├── Coupons         ← API
-│   ├── Partners        ← API
-│   ├── Kits            ← mock
-│   └── Blog            ← mock
-└── Footer
-```
+CTA da seção: `/kit-pickup` (Fase 2 — solicitações). Rota `/kits` permanece My Kits autenticado.
 
 ## Boas práticas
 

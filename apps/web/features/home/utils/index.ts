@@ -1,8 +1,4 @@
 export {
-  MOCK_BLOG_POSTS,
-  MOCK_KITS,
-} from "./mock-home-data";
-export {
   HOME_FEATURED_EVENTS_EMPTY_MESSAGE,
   HOME_FEATURED_EVENTS_ERROR_MESSAGE,
   HOME_FEATURED_EVENTS_LIST_HREF,
@@ -27,3 +23,19 @@ export {
   buildHomeCouponsParams,
   toHomeCouponsPresentation,
 } from "./home-coupons";
+export {
+  HOME_BLOG_EMPTY_MESSAGE,
+  HOME_BLOG_ERROR_MESSAGE,
+  HOME_BLOG_LIST_HREF,
+  HOME_BLOG_PER_PAGE,
+  buildHomeBlogParams,
+  toHomeBlogPresentation,
+} from "./home-blog";
+export {
+  HOME_KIT_PICKUP_EMPTY_MESSAGE,
+  HOME_KIT_PICKUP_ERROR_MESSAGE,
+  HOME_KIT_PICKUP_LIST_HREF,
+  HOME_KIT_PICKUP_PER_PAGE,
+  buildHomeKitPickupParams,
+  toHomeKitPickupPresentation,
+} from "./home-kit-pickup";

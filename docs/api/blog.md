@@ -4,71 +4,92 @@ Conteúdo editorial da plataforma.
 
 ## Objetivo
 
-Publicar artigos, dicas de treino, notícias do mundo da corrida e conteúdo da plataforma.
+Catálogo público de posts para teaser na Home (**MVP atual**).  
+Página `/blog`, detalhe, CMS e Admin permanecem **fora deste ciclo**.
+
+## Status MVP
+
+| Capacidade | Status |
+|---|---|
+| `GET /blog/posts` (público) | ✅ Implementado |
+| Filtro `published` + paginação + ordenação | ✅ |
+| Seed determinístico | ✅ |
+| Home dinâmica | ✅ |
+| `/blog` e `/blog/{slug}` | Known Debt |
+| `content` / `author` / `coverImage` | Known Debt |
+| Categories API / busca / CMS / CRUD | Known Debt |
 
 ## Permissões
 
 | Endpoint | Público | Autenticado | Admin |
 |---|---|---|---|
-| Listar/ler posts | ✅ | ✅ | ✅ |
-| Criar/editar/deletar | — | — | ✅ |
+| Listar posts (teaser Home) | ✅ | ✅ | ✅ |
+| Detalhe / CRUD / categorias | — | — | — (fora do MVP) |
 
 ## Endpoints
 
 | Método | Endpoint | Descrição | Permissão |
 |---|---|---|---|
-| `GET` | `/blog/posts` | Listar artigos | Público |
-| `GET` | `/blog/posts/:slug` | Artigo por slug | Público |
-| `GET` | `/blog/categories` | Listar categorias | Público |
-| `POST` | `/blog/posts` | Criar artigo | Admin |
-| `PATCH` | `/blog/posts/:id` | Atualizar artigo | Admin |
-| `DELETE` | `/blog/posts/:id` | Remover artigo | Admin |
+| `GET` | `/blog/posts` | Listar posts (catálogo público) | Público |
 
-## Estrutura das respostas
+## GET /blog/posts
 
-### GET /blog/posts/:slug
+### Query
+
+| Parâmetro | Tipo | Default | Descrição |
+|---|---|---|---|
+| `page` | number | `1` | Página |
+| `perPage` | number | `3` | Máximo `100` |
+| `published` | boolean | `true` | Filtrar publicados |
+| `sort` | `publishedAt` \| `title` \| `createdAt` | `publishedAt` | Ordenação |
+| `order` | `asc` \| `desc` | `desc` | Direção |
+
+### Resposta
 
 ```json
 {
-  "data": {
-    "id": "blg_01ABC",
-    "title": "5 dicas para sua primeira maratona",
-    "slug": "5-dicas-primeira-maratona",
-    "excerpt": "Preparação física e mental...",
-    "content": "# 5 dicas...",
-    "coverImage": "https://...",
-    "category": "training",
-    "author": {
-      "id": "usr_admin",
-      "name": "Equipe Corredora DF"
-    },
-    "publishedAt": "2026-06-10T09:00:00Z",
-    "readingTime": 5
+  "data": [
+    {
+      "id": "blg_01_5k_tips",
+      "title": "5 dicas para sua primeira corrida de 5K",
+      "slug": "5-dicas-primeira-corrida-5k",
+      "excerpt": "Preparação simples para estreantes no calendário do DF.",
+      "category": "Treino",
+      "readingTimeMinutes": 5,
+      "publishedAt": "2026-06-10T09:00:00.000Z",
+      "published": true
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "perPage": 3,
+    "total": 3,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
   }
 }
 ```
 
-## Filtros
+**Não retorna:** `content`, `author`, `authorId`, `coverImage`.
 
-| Parâmetro | Tipo | Descrição |
-|---|---|---|
-| `search` | string | Busca por título |
-| `category` | string | `training`, `nutrition`, `events`, `gear` |
-| `authorId` | string | Filtrar por autor |
+Lista vazia: `200` com `data: []`.
 
-## Ordenação
-
-| Campo | Default |
-|---|---|
-| `publishedAt` | `desc` |
-| `title` | `asc` |
-
-## Códigos de erro
+### Erros
 
 | Código | Status | Quando |
 |---|---|---|
-| `POST_NOT_FOUND` | 404 | Artigo não existe |
+| `VALIDATION_ERROR` | 400 | Query inválida |
 
 ## Relação com o Frontend
 
-`features/blog/` — listagem, artigo, categorias. SEO via metadata no App Router.
+`features/blog/` — `http-get-blog-posts` + `getBlogPostsList` (sem credentials).  
+Home: seção Blog → `BlogCard` (CTA `/blog`, cards `/blog/{slug}` — páginas Known Debt).
+
+## Known Debt
+
+- Página `/blog` e detalhe `/blog/{slug}`
+- Campos `content`, `coverImage`, `author`
+- `GET /blog/categories`, busca, comentários
+- Admin CRUD / CMS
+- Analytics / featured / cache / SEO avançado

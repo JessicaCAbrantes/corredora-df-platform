@@ -558,6 +558,30 @@ a {
   color: var(--butterfly-muted);
 }
 
+.home-blog__state {
+  display: grid;
+  gap: var(--butterfly-space-sm);
+  padding-block: var(--butterfly-space-md);
+}
+
+.home-blog__empty,
+.home-blog__error {
+  margin: 0;
+  color: var(--butterfly-muted);
+}
+
+.home-kit-pickup__state {
+  display: grid;
+  gap: var(--butterfly-space-sm);
+  padding-block: var(--butterfly-space-md);
+}
+
+.home-kit-pickup__empty,
+.home-kit-pickup__error {
+  margin: 0;
+  color: var(--butterfly-muted);
+}
+
 .butterfly-section-header h2 {
   margin: 0 0 var(--butterfly-space-sm);
   font-size: clamp(1.5rem, 3vw, 2rem);
@@ -1771,4 +1795,84 @@ a {
 
 .my-kits-page__event-link:hover {
   text-decoration: underline;
+}
+
+.kit-pickup-page__main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--butterfly-space-xl) var(--butterfly-space-md);
+}
+
+.kit-pickup-page__panel {
+  display: grid;
+  gap: var(--butterfly-space-md);
+}
+
+.kit-pickup-page__title {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.kit-pickup-page__lead {
+  margin: 0;
+  color: var(--butterfly-muted);
+}
+
+.kit-pickup-page__form {
+  display: grid;
+  gap: var(--butterfly-space-sm);
+}
+
+.kit-pickup-page__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.kit-pickup-page__field input,
+.kit-pickup-page__field select {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 35%, transparent);
+  border-radius: 0.35rem;
+  font: inherit;
+}
+
+.kit-pickup-page__error {
+  color: #b42318;
+}
+
+.kit-pickup-page__list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.kit-pickup-page__meta {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kit-pickup-page__meta dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--butterfly-muted);
+}
+
+.kit-pickup-page__meta dd {
+  margin: 0;
+}
+
+.kit-pickup-page__term-body {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: color-mix(in srgb, var(--butterfly-muted) 8%, transparent);
+  padding: var(--butterfly-space-sm);
+  border-radius: 0.35rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.kit-pickup-page__cancel {
+  justify-self: start;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 40%, transparent);
 }

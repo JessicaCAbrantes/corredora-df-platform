@@ -4,20 +4,40 @@ Feature de conteúdo editorial.
 
 ## Objetivo
 
-Publicar artigos, dicas de treino, notícias do mundo da corrida e conteúdo da plataforma.
+Listar posts publicados para a Home via `GET /api/v1/blog/posts` (catálogo público teaser).
 
-## Exemplos de uso
+## Fluxo (MVP)
 
-```tsx
-// app/blog/page.tsx
-import { BlogPage } from "@/features/blog";
-
-// app/blog/[slug]/page.tsx
-import { BlogPostPage } from "@/features/blog";
+```text
+HomePage
+  ↓
+getBlogPostsList(buildHomeBlogParams())
+  ↓
+http-get-blog-posts (público, sem credentials)
+  ↓
+Blog → BlogCard[]
 ```
+
+Query Home: `page=1`, `perPage=3`, `published=true`, `sort=publishedAt`, `order=desc`.
+
+## Estrutura
+
+```text
+features/blog/
+├── types/
+├── services/         # getBlogPostsList
+└── infrastructure/   # http-get-blog-posts
+```
+
+## Fora deste MVP
+
+- Página `/blog` e `/blog/{slug}`
+- `content` / `author` / `coverImage`
+- Categories API / busca / CMS / Admin CRUD
+- Auth Boundary
 
 ## Boas práticas
 
-- Tipos como `BlogPost`, `BlogCategory` em `features/blog/types/`.
-- Listagem e detalhe como componentes separados.
-- SEO e metadata gerenciados na camada de rota (`app/blog/`).
+- Sem Auth / cookie / Boundary no list público.
+- Reutilizar `BlogCard` de `@corredora/ui`.
+- AL008: Service → Adapter HTTP fino → API.

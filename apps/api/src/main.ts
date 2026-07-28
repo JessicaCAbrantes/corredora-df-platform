@@ -6,7 +6,8 @@ import type { Env } from "./config/env.validation";
 import { ValidationExceptionFilter } from "./filters/validation-exception.filter";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody required for Stripe / mock webhook signature verification
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService<Env, true>);
 
   app.setGlobalPrefix("api/v1", {

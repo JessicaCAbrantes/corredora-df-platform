@@ -1,9 +1,5 @@
 export { HomePage } from "./components";
 export {
-  MOCK_BLOG_POSTS,
-  MOCK_KITS,
-} from "./utils/mock-home-data";
-export {
   HOME_FEATURED_EVENTS_EMPTY_MESSAGE,
   HOME_FEATURED_EVENTS_LOADING_MESSAGE,
   buildHomeFeaturedEventsParams,
@@ -19,3 +15,13 @@ export {
   buildHomeCouponsParams,
   toHomeCouponsPresentation,
 } from "./utils/home-coupons";
+export {
+  HOME_BLOG_EMPTY_MESSAGE,
+  buildHomeBlogParams,
+  toHomeBlogPresentation,
+} from "./utils/home-blog";
+export {
+  HOME_KIT_PICKUP_EMPTY_MESSAGE,
+  buildHomeKitPickupParams,
+  toHomeKitPickupPresentation,
+} from "./utils/home-kit-pickup";

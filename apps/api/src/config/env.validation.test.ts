@@ -23,6 +23,32 @@ function run(): void {
     const env = validateEnv(base);
     assert(env.AUTH_SECRET === base.AUTH_SECRET, "valid env keeps AUTH_SECRET");
     assert(env.NODE_ENV === "production", "valid production NODE_ENV");
+    assert(env.PAYMENT_PROVIDER === "mock", "default payment provider is mock");
+  }
+
+  {
+    const env = validateEnv({
+      ...base,
+      PAYMENT_PROVIDER: "stripe",
+      STRIPE_SECRET_KEY: "sk_test_x",
+      STRIPE_WEBHOOK_SECRET: "whsec_x",
+    });
+    assert(env.PAYMENT_PROVIDER === "stripe", "stripe provider accepted");
+    assert(env.STRIPE_SECRET_KEY === "sk_test_x", "stripe secret required");
+  }
+
+  {
+    let threw = false;
+    try {
+      validateEnv({ ...base, PAYMENT_PROVIDER: "stripe" });
+    } catch (error: unknown) {
+      threw = true;
+      assert(
+        error instanceof Error && error.message.includes("STRIPE_SECRET_KEY"),
+        "stripe without keys fails",
+      );
+    }
+    assert(threw, "stripe without keys fails fast");
   }
 
   {

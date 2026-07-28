@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { HomePage } from "@/features/home";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     absolute: "Corredora DF | Corridas e eventos",
@@ -11,7 +13,7 @@ export const metadata: Metadata = {
 
 /**
  * Home route — thin App Router entry.
- * Featured Events fetch lives in features/home HomePage (getEventsList).
+ * Dynamic: Home sections fetch public APIs at request time (no-store).
  */
 export default function Home() {
   return <HomePage />;

@@ -22,6 +22,12 @@ enum EventRegistrationStatus {
   upcoming
 }
 
+/// Distinguishes Corredora-owned registration vs third-party external registration.
+enum EventRegistrationMode {
+  internal
+  external
+}
+
 /// HTTP values use hyphens / leading digits; Prisma identifiers use @map.
 enum EventCategory {
   marathon
@@ -41,13 +47,15 @@ model Event {
   distance           String
   status             EventLifecycleStatus
   registrationStatus EventRegistrationStatus  @map("registration_status")
+  registrationMode   EventRegistrationMode    @default(internal) @map("registration_mode")
   coverImage         String                   @map("cover_image")
   priceAmount        Decimal?                 @map("price_amount") @db.Decimal(10, 2)
   priceCurrency      String?                  @map("price_currency")
   createdAt          DateTime                 @default(now()) @map("created_at")
 
-  registrations EventRegistration[]
-  kit           Kit?
+  registrations     EventRegistration[]
+  kit               Kit?
+  kitPickupService  KitPickupService?
 
   @@index([date])
   @@index([status])
@@ -55,6 +63,7 @@ model Event {
   @@index([city])
   @@index([createdAt])
   @@index([registrationStatus])
+  @@index([registrationMode])
   @@map("events")
 }
 
@@ -69,6 +78,129 @@ model Kit {
   @@map("kits")
 }
 
+/// Kit Pickup Service MVP (Phase 1) — public Home teaser offer.
+model KitPickupService {
+  id               String    @id @default(cuid())
+  eventId          String    @unique @map("event_id")
+  title            String
+  serviceAvailable Boolean   @default(true) @map("service_available")
+  feeAmount        Decimal?  @map("fee_amount") @db.Decimal(10, 2)
+  feeCurrency      String    @default("BRL") @map("fee_currency")
+  pickupLocation   String?   @map("pickup_location")
+  pickupStartAt    DateTime? @map("pickup_start_at")
+  pickupEndAt      DateTime? @map("pickup_end_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  event    Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  requests KitPickupRequest[]
+
+  @@index([serviceAvailable])
+  @@index([pickupStartAt])
+  @@index([createdAt])
+  @@map("kit_pickup_services")
+}
+
+/// Participant-facing request lifecycle (Phase 2). Operational pickup states = Phase 2.1.
+enum KitPickupRequestStatus {
+  TERM_PENDING
+  TERM_ACCEPTED
+  PAYMENT_PENDING
+  PAID
+  WAIVED
+  CANCELLED
+}
+
+/// Denormalized payment mirror on the request (gateway is source of PAID).
+enum KitPickupPaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  WAIVED
+  FAILED
+}
+
+enum KitPickupPaymentRecordStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+/// Authenticated intent to use a KitPickupService (Phase 2).
+model KitPickupRequest {
+  id                   String                 @id @default(cuid())
+  userId               String                 @map("user_id")
+  kitPickupServiceId   String                 @map("kit_pickup_service_id")
+  registrationId       String?                @map("registration_id")
+  status               KitPickupRequestStatus @default(TERM_PENDING)
+  paymentStatus        KitPickupPaymentStatus @default(UNPAID) @map("payment_status")
+  feeAmountSnapshot    Decimal?               @map("fee_amount_snapshot") @db.Decimal(10, 2)
+  feeCurrencySnapshot  String?                @map("fee_currency_snapshot")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  kitPickupService KitPickupService      @relation(fields: [kitPickupServiceId], references: [id], onDelete: Cascade)
+  registration     EventRegistration?    @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+  participant      ParticipantSnapshot?
+  termAcceptance   PickupTermAcceptance?
+  payments         KitPickupPayment[]
+
+  @@index([userId])
+  @@index([kitPickupServiceId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("kit_pickup_requests")
+}
+
+/// External-event participant data collected for pickup (no EventRegistration).
+model ParticipantSnapshot {
+  id                       String   @id @default(cuid())
+  kitPickupRequestId       String   @unique @map("kit_pickup_request_id")
+  fullName                 String   @map("full_name")
+  email                    String
+  phone                    String
+  externalRegistrationCode String   @map("external_registration_code")
+  createdAt                DateTime @default(now()) @map("created_at")
+
+  request KitPickupRequest @relation(fields: [kitPickupRequestId], references: [id], onDelete: Cascade)
+
+  @@map("participant_snapshots")
+}
+
+/// Immutable versioned term acceptance (Phase 2).
+model PickupTermAcceptance {
+  id                 String   @id @default(cuid())
+  kitPickupRequestId String   @unique @map("kit_pickup_request_id")
+  version            String
+  termContentHash    String   @map("term_content_hash")
+  acceptedAt         DateTime @default(now()) @map("accepted_at")
+  acceptedByUserId   String   @map("accepted_by_user_id")
+
+  request KitPickupRequest @relation(fields: [kitPickupRequestId], references: [id], onDelete: Cascade)
+
+  @@map("pickup_term_acceptances")
+}
+
+/// Gateway payment record for a kit pickup request (Phase 2).
+model KitPickupPayment {
+  id                 String                       @id @default(cuid())
+  kitPickupRequestId String                       @map("kit_pickup_request_id")
+  provider           String
+  providerPaymentId  String                       @unique @map("provider_payment_id")
+  amount             Decimal                      @db.Decimal(10, 2)
+  currency           String
+  status             KitPickupPaymentRecordStatus @default(PENDING)
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @updatedAt @map("updated_at")
+
+  request KitPickupRequest @relation(fields: [kitPickupRequestId], references: [id], onDelete: Cascade)
+
+  @@index([kitPickupRequestId])
+  @@index([status])
+  @@map("kit_pickup_payments")
+}
+
 /// MVP registration row — userId is an opaque string (no FK to User yet; known debt).
 model EventRegistration {
   id        String   @id @default(cuid())
@@ -76,7 +208,8 @@ model EventRegistration {
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event              Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  kitPickupRequests  KitPickupRequest[]
 
   @@unique([eventId, userId])
   @@index([userId])
@@ -131,4 +264,23 @@ model Coupon {
   @@index([createdAt])
   @@index([partnerId])
   @@map("coupons")
+}
+
+/// Blog MVP — public Home teaser catalog. No content/author/cover in this cycle.
+model BlogPost {
+  id                 String    @id @default(cuid())
+  title              String
+  slug               String    @unique
+  excerpt            String
+  category           String?
+  readingTimeMinutes Int?      @map("reading_time_minutes")
+  publishedAt        DateTime? @map("published_at")
+  published          Boolean   @default(false)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@index([published])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@map("blog_posts")
 }

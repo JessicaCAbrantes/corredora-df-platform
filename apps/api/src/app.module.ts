@@ -1,11 +1,15 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "./auth/auth.module";
+import { BlogModule } from "./blog/blog.module";
 import { validateEnv } from "./config/env.validation";
 import { CouponsModule } from "./coupons/coupons.module";
 import { EventsModule } from "./events/events.module";
 import { HealthModule } from "./health/health.module";
+import { KitPickupRequestsModule } from "./kit-pickup-requests/kit-pickup-requests.module";
+import { KitPickupServicesModule } from "./kit-pickup-services/kit-pickup-services.module";
 import { PartnersModule } from "./partners/partners.module";
+import { PaymentsModule } from "./payments/payments.module";
 import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
@@ -21,6 +25,10 @@ import { PrismaModule } from "./prisma/prisma.module";
     EventsModule,
     PartnersModule,
     CouponsModule,
+    BlogModule,
+    KitPickupServicesModule,
+    PaymentsModule,
+    KitPickupRequestsModule,
   ],
 })
 export class AppModule {}
