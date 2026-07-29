@@ -167,6 +167,7 @@ async function seedAuthUser(): Promise<void> {
 
   // Secondary deterministic participant used by ownership/isolation E2E tests.
   await prisma.user.upsert({
+    where: { email: participant2Email },
     create: {
       id: "usr_seed_participant_2",
       email: participant2Email,
