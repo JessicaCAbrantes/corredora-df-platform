@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Footer } from "../../../../../packages/ui/src/components/Footer";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
 import { buildLoginUrl } from "../../events/auth/build-login-url";
 import { getMyKitPickupRequests } from "../services";
 import type { KitPickupRequestItem } from "../types";
+import { KitPickupRequestCard } from "./KitPickupRequestCard";
 
 type LoadState =
   | { status: "loading" }
@@ -21,25 +22,29 @@ export function MyKitPickupRequestsPage() {
   const router = useRouter();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
+  const load = useCallback(async () => {
+    const result = await getMyKitPickupRequests();
+    if (!result.ok) {
+      if (result.reason === "UNAUTHORIZED") {
+        router.replace(buildLoginUrl(RETURN_URL));
+        return;
+      }
+      setState({ status: "error" });
+      return;
+    }
+    setState({ status: "ready", items: result.data });
+  }, [router]);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const result = await getMyKitPickupRequests();
+      await load();
       if (cancelled) return;
-      if (!result.ok) {
-        if (result.reason === "UNAUTHORIZED") {
-          router.replace(buildLoginUrl(RETURN_URL));
-          return;
-        }
-        setState({ status: "error" });
-        return;
-      }
-      setState({ status: "ready", items: result.data });
     })();
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [load]);
 
   return (
     <Layout className="kit-pickup-page">
@@ -48,28 +53,40 @@ export function MyKitPickupRequestsPage() {
         <div className="kit-pickup-page__panel">
           <h1 className="kit-pickup-page__title">Minhas solicitações</h1>
           <p className="kit-pickup-page__lead">
+            Acompanhe o status das suas solicitações de retirada de kit.
+          </p>
+          <p>
             <Link href="/kit-pickup">Nova solicitação</Link>
+            {" · "}
+            <Link href="/kit-pickup">Ver serviços disponíveis</Link>
           </p>
 
           {state.status === "loading" ? (
-            <p role="status">Carregando…</p>
+            <p role="status">Carregando suas solicitações…</p>
           ) : null}
+
           {state.status === "error" ? (
-            <p role="alert">Não foi possível carregar suas solicitações.</p>
+            <div role="alert">
+              <p>Não foi possível carregar suas solicitações.</p>
+              <button type="button" onClick={() => void load()}>
+                Tentar novamente
+              </button>
+            </div>
           ) : null}
+
           {state.status === "ready" && state.items.length === 0 ? (
-            <p>Nenhuma solicitação encontrada.</p>
+            <div className="kit-pickup-empty">
+              <p>Você ainda não possui solicitações de retirada.</p>
+              <Link href="/kit-pickup">Ver serviços disponíveis</Link>
+            </div>
           ) : null}
+
           {state.status === "ready" && state.items.length > 0 ? (
-            <ul className="kit-pickup-page__list">
+            <div className="kit-pickup-card-grid">
               {state.items.map((item) => (
-                <li key={item.id}>
-                  <Link href={`/kit-pickup-requests/${item.id}`}>
-                    {item.event.name} — {item.statusLabel}
-                  </Link>
-                </li>
+                <KitPickupRequestCard key={item.id} item={item} />
               ))}
-            </ul>
+            </div>
           ) : null}
         </div>
       </main>

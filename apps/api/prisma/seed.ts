@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 /** Dev-only Auth MVP credentials — never stored in plaintext in the DB. */
 const SEED_USER_EMAIL = "runner@corredora.df";
 const SEED_USER_PASSWORD = "corredora123";
+const SEED_PARTICIPANT_2_EMAIL = "participant2@corredora.df";
+const SEED_PARTICIPANT_2_PASSWORD = "corredora123";
 
 
 /**
@@ -147,15 +149,32 @@ const events = [
 async function seedAuthUser(): Promise<void> {
   const email = SEED_USER_EMAIL.trim().toLowerCase();
   const passwordHash = hashPassword(SEED_USER_PASSWORD);
+  const participant2Email = SEED_PARTICIPANT_2_EMAIL.trim().toLowerCase();
+  const participant2PasswordHash = hashPassword(SEED_PARTICIPANT_2_PASSWORD);
 
+  // Fixed id so local KIT_PICKUP_OPERATOR_USER_IDS can reference a stable value.
   await prisma.user.upsert({
     where: { email },
     create: {
+      id: "usr_seed_runner",
       email,
       passwordHash,
     },
     update: {
       passwordHash,
+    },
+  });
+
+  // Secondary deterministic participant used by ownership/isolation E2E tests.
+  await prisma.user.upsert({
+    where: { email: participant2Email },
+    create: {
+      id: "usr_seed_participant_2",
+      email: participant2Email,
+      passwordHash: participant2PasswordHash,
+    },
+    update: {
+      passwordHash: participant2PasswordHash,
     },
   });
 }

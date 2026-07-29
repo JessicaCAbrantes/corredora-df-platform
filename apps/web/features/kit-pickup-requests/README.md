@@ -14,11 +14,20 @@ Solicitações autenticadas de retirada de kit (Fase 2).
 | Rota | Papel |
 |---|---|
 | `/kit-pickup` | Catálogo + criar solicitação |
-| `/kit-pickup-requests` | Minhas solicitações |
-| `/kit-pickup-requests/:id` | Detalhe / termo / pagamento / cancelar |
+| `/kit-pickup-requests` | Minhas solicitações (cards enriquecidos) |
+| `/kit-pickup-requests/:id` | Detalhe consolidado / termo / pagamento / timeline / handover |
 
 `/kits` permanece **My Kits** (`GET /events/me/kits`).
 
+## Experience MVP
+
+- Timeline visual de acompanhamento
+- Labels amigáveis (`statusLabel`, `paymentStatusLabel`)
+- Internal vs external com disclaimers
+- Handover visível após `DELIVERED`
+- Cancelamento com confirmação e aviso de ausência de reembolso automático
+- Snapshot congelado desde a criação (sem PATCH)
+
 ## Known Debt
 
-Operação (pickup/custody/handover), refund, RBAC, CPF/documentos, UI avançada.
+Operação (dashboard), refund automático, RBAC, CPF/documentos, notificações, naming navbar `/kits`.

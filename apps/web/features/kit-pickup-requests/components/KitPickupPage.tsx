@@ -18,6 +18,7 @@ import {
   getMyKitPickupRequests,
 } from "../services";
 import type { KitPickupRequestItem } from "../types";
+import { KitPickupRequestCard } from "./KitPickupRequestCard";
 
 type CatalogState =
   | { status: "loading" }
@@ -227,6 +228,11 @@ export function KitPickupPage() {
 
               {selectedService?.registrationMode === "external" ? (
                 <>
+                  <p className="kit-pickup-detail__disclaimer">
+                    Você não está se inscrevendo nesta corrida. A Corredora DF
+                    apenas realizará a retirada do seu kit junto à organização do
+                    evento e fará a entrega conforme as condições do serviço.
+                  </p>
                   <label className="kit-pickup-page__field">
                     <span>Nome completo</span>
                     <input
@@ -291,19 +297,21 @@ export function KitPickupPage() {
             {mine.status === "error" ? (
               <p role="alert">Não foi possível carregar suas solicitações.</p>
             ) : null}
+            {mine.status === "unauthorized" ? (
+              <p>
+                <Link href={buildLoginUrl(RETURN_URL)}>Entre na sua conta</Link>{" "}
+                para ver suas solicitações.
+              </p>
+            ) : null}
             {mine.status === "ready" && mine.items.length === 0 ? (
               <p>Você ainda não possui solicitações.</p>
             ) : null}
             {mine.status === "ready" && mine.items.length > 0 ? (
-              <ul className="kit-pickup-page__list">
-                {mine.items.map((item) => (
-                  <li key={item.id}>
-                    <Link href={`/kit-pickup-requests/${item.id}`}>
-                      {item.event.name} — {item.statusLabel}
-                    </Link>
-                  </li>
+              <div className="kit-pickup-card-grid">
+                {mine.items.slice(0, 3).map((item) => (
+                  <KitPickupRequestCard key={item.id} item={item} />
                 ))}
-              </ul>
+              </div>
             ) : null}
             <p>
               <Link href="/kit-pickup-requests">Ver todas</Link>

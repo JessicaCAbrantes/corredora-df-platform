@@ -13,7 +13,7 @@ Solicitações autenticadas de serviço de retirada de kit (Fase 2).
 | Gateway (Stripe ou mock HMAC) | ✅ |
 | Webhook assinado + idempotente | ✅ |
 | Ownership / cancelamento participante | ✅ |
-| Pickup / custody / handover | Known Debt — Fase 2.1 |
+| Pickup / custody / handover | ✅ Fase 2.1 — ver `kit-pickup-operations.md` |
 
 ## Endpoints
 
@@ -55,10 +55,22 @@ Campos **proibidos** do cliente: `userId`, `status`, `paymentStatus`, `feeAmount
 ## Fluxo de status
 
 ```text
-TERM_PENDING → (accept-term) → PAYMENT_PENDING | WAIVED
-PAYMENT_PENDING → (webhook paid) → PAID
-* → CANCELLED
+TERM_PENDING → (accept-term) → PAYMENT_PENDING | PICKUP_PENDING (WAIVED)
+PAYMENT_PENDING → (webhook paid) → PICKUP_PENDING (paymentStatus=PAID)
+PICKUP_PENDING → … → DELIVERED   (Fase 2.1 — Operators)
+* → CANCELLED (participante, antes de PICKED_UP)
 ```
+
+## DTO participante (Experience MVP)
+
+`GET /kit-pickup-requests/:id` e `GET /kit-pickup-requests/me` incluem:
+
+- `paymentStatusLabel` — rótulo amigável do pagamento
+- `service.pickupLabel` — local/janela (reutiliza Fase 1)
+- `timeline` — `pickedUpAt`, `custodyAt`, `readyAt`, `deliveredAt` (sem `*By`)
+- `handover` — quando `DELIVERED`: `receivedByName`, `notes`, `deliveredAt`
+
+Campos **nunca** expostos ao participante: `pickedUpBy`, `custodyBy`, `readyBy`, `deliveredBy`.
 
 `paymentStatus = PAID` somente via webhook validado.
 
