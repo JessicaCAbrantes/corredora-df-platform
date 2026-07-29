@@ -228,6 +228,16 @@ function createPrismaMock(store: Store) {
           paymentStatus: data.paymentStatus,
           feeAmountSnapshot: data.feeAmountSnapshot,
           feeCurrencySnapshot: data.feeCurrencySnapshot,
+          pickedUpAt: null as Date | null,
+          pickedUpBy: null as string | null,
+          custodyAt: null as Date | null,
+          custodyBy: null as string | null,
+          readyAt: null as Date | null,
+          readyBy: null as string | null,
+          deliveredAt: null as Date | null,
+          deliveredBy: null as string | null,
+          receivedByName: null as string | null,
+          handoverNotes: null as string | null,
           createdAt: now,
           updatedAt: now,
           participant: data.participant
@@ -463,9 +473,9 @@ async function run(): Promise<void> {
       "PARTICIPANT_NOT_ALLOWED",
     );
 
-    // accept term → WAIVED
+    // accept term → no fee → PICKUP_PENDING + WAIVED payment
     const afterTerm = await service.acceptTerm(USER, created.data.id);
-    assert(afterTerm.data.status === "WAIVED", "no fee → WAIVED");
+    assert(afterTerm.data.status === "PICKUP_PENDING", "no fee → PICKUP_PENDING");
     assert(afterTerm.data.paymentStatus === "WAIVED", "paymentStatus WAIVED");
     assert(afterTerm.data.term.accepted === true, "term accepted");
     assert(
@@ -607,12 +617,15 @@ async function run(): Promise<void> {
     await payments.handleVerifiedEvent(event!);
 
     const paidRow = store.requests.get(created.data.id)!;
-    assert(paidRow.status === "PAID", "request PAID via webhook");
+    assert(paidRow.status === "PICKUP_PENDING", "request PICKUP_PENDING via webhook");
     assert(paidRow.paymentStatus === "PAID", "paymentStatus PAID");
 
     // idempotent webhook
     await payments.handleVerifiedEvent(event!);
-    assert(store.requests.get(created.data.id)!.status === "PAID", "idempotent");
+    assert(
+      store.requests.get(created.data.id)!.status === "PICKUP_PENDING",
+      "idempotent",
+    );
 
     // invalid signature
     try {

@@ -1876,3 +1876,459 @@ a {
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--butterfly-muted) 40%, transparent);
 }
+
+.kit-pickup-card-grid {
+  display: grid;
+  gap: var(--butterfly-space-md);
+}
+
+.kit-pickup-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: var(--butterfly-space-md);
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 25%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--butterfly-surface) 90%, transparent);
+}
+
+.kit-pickup-card__header {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.kit-pickup-card__event {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.kit-pickup-card__service {
+  margin: 0;
+  color: var(--butterfly-muted);
+  font-size: 0.95rem;
+}
+
+.kit-pickup-card__status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.kit-pickup-card__status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #12b76a;
+}
+
+.kit-pickup-card__payment,
+.kit-pickup-card__mode,
+.kit-pickup-card__pickup,
+.kit-pickup-card__date {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--butterfly-muted);
+}
+
+.kit-pickup-card__cta {
+  justify-self: start;
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+.kit-pickup-detail__header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.kit-pickup-detail__eyebrow {
+  margin: 0;
+  color: var(--butterfly-muted);
+  font-size: 0.9rem;
+}
+
+.kit-pickup-detail__status-badge {
+  display: inline-flex;
+  align-self: start;
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #12b76a 12%, transparent);
+  font-weight: 600;
+}
+
+.kit-pickup-detail__section {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--butterfly-muted) 20%, transparent);
+}
+
+.kit-pickup-detail__section-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.kit-pickup-detail__disclaimer,
+.kit-pickup-detail__hint {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--butterfly-muted);
+}
+
+.kit-pickup-detail__term-accepted {
+  margin: 0;
+  font-weight: 600;
+}
+
+.kit-pickup-detail__link-button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.kit-pickup-detail__cancelled {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--butterfly-muted) 12%, transparent);
+  font-weight: 600;
+}
+
+.kit-pickup-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.kit-pickup-timeline__step {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.kit-pickup-timeline__step--upcoming {
+  opacity: 0.55;
+}
+
+.kit-pickup-timeline__step--current .kit-pickup-timeline__label {
+  font-weight: 600;
+}
+
+.kit-pickup-timeline__symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.kit-pickup-timeline__content {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.kit-pickup-timeline__label {
+  display: block;
+}
+
+.kit-pickup-timeline__time {
+  font-size: 0.85rem;
+  color: var(--butterfly-muted);
+}
+
+.kit-pickup-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--butterfly-space-md);
+  background: color-mix(in srgb, #000 35%, transparent);
+}
+
+.kit-pickup-dialog__panel {
+  display: grid;
+  gap: var(--butterfly-space-sm);
+  width: min(100%, 28rem);
+  padding: var(--butterfly-space-md);
+  border-radius: 0.5rem;
+  background: var(--butterfly-surface, #fff);
+  box-shadow: 0 12px 40px color-mix(in srgb, #000 18%, transparent);
+}
+
+.kit-pickup-dialog__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.kit-pickup-dialog__warning {
+  margin: 0;
+  color: #b42318;
+}
+
+.kit-pickup-dialog__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.kit-pickup-dialog__confirm {
+  border-color: #b42318;
+  color: #b42318;
+}
+
+.kit-pickup-empty {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Kit Pickup Operations Dashboard */
+.kit-ops-page__main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--butterfly-space-xl) var(--butterfly-space-md);
+  display: grid;
+  gap: var(--butterfly-space-md);
+}
+
+.kit-ops-page__title {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.kit-ops-page__lead {
+  margin: 0;
+  color: var(--butterfly-muted);
+}
+
+.kit-ops-filters {
+  display: grid;
+  gap: var(--butterfly-space-sm);
+}
+
+.kit-ops-filters__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.kit-ops-filters__tab {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 30%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.kit-ops-filters__tab--active {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--butterfly-muted) 12%, transparent);
+}
+
+.kit-ops-filters__mode {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 16rem;
+}
+
+.kit-ops-layout {
+  display: grid;
+  gap: var(--butterfly-space-md);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 960px) {
+  .kit-ops-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+    align-items: start;
+  }
+}
+
+.kit-ops-queue {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kit-ops-queue__row {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 25%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--butterfly-surface) 90%, transparent);
+}
+
+.kit-ops-queue__row--selected {
+  border-color: color-mix(in srgb, var(--butterfly-muted) 55%, transparent);
+}
+
+.kit-ops-queue__main {
+  display: grid;
+  gap: 0.25rem;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.kit-ops-queue__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.kit-ops-queue__status {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.kit-ops-queue__meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--butterfly-muted);
+}
+
+.kit-ops-queue__action {
+  justify-self: start;
+}
+
+.kit-ops-detail {
+  display: grid;
+  gap: 0.75rem;
+  padding: var(--butterfly-space-md);
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 25%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--butterfly-surface) 95%, transparent);
+}
+
+.kit-ops-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.kit-ops-detail__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.kit-ops-detail__status {
+  margin: 0;
+  font-weight: 600;
+}
+
+.kit-ops-detail__dl {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.kit-ops-detail__dl dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--butterfly-muted);
+}
+
+.kit-ops-detail__dl dd {
+  margin: 0;
+}
+
+.kit-ops-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kit-ops-timeline__step {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.kit-ops-timeline__label {
+  font-weight: 600;
+}
+
+.kit-ops-timeline__time,
+.kit-ops-timeline__pending,
+.kit-ops-timeline__operator {
+  font-size: 0.85rem;
+  color: var(--butterfly-muted);
+}
+
+.kit-ops-action-bar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.kit-ops-pagination {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.kit-ops-feedback {
+  margin: 0;
+  color: #027a48;
+}
+
+.kit-ops-error {
+  margin: 0;
+  color: #b42318;
+}
+
+.kit-ops-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--butterfly-space-md);
+  background: color-mix(in srgb, #000 35%, transparent);
+}
+
+.kit-ops-dialog__panel {
+  display: grid;
+  gap: var(--butterfly-space-sm);
+  width: min(100%, 28rem);
+  padding: var(--butterfly-space-md);
+  border-radius: 0.5rem;
+  background: var(--butterfly-surface, #fff);
+}
+
+.kit-ops-dialog__field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.kit-ops-dialog__field input,
+.kit-ops-dialog__field textarea {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--butterfly-muted) 35%, transparent);
+  border-radius: 0.35rem;
+}
+
+.kit-ops-dialog__error {
+  margin: 0;
+  color: #b42318;
+}
+
+.kit-ops-dialog__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}

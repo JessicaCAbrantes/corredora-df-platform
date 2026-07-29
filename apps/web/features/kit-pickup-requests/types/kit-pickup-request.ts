@@ -1,5 +1,5 @@
 /**
- * Kit Pickup Request application types (Phase 2).
+ * Kit Pickup Request application types (Phase 2 + Experience MVP).
  */
 
 export type KitPickupRequestStatus =
@@ -8,6 +8,11 @@ export type KitPickupRequestStatus =
   | "PAYMENT_PENDING"
   | "PAID"
   | "WAIVED"
+  | "PICKUP_PENDING"
+  | "PICKED_UP"
+  | "IN_CUSTODY"
+  | "READY_FOR_HANDOVER"
+  | "DELIVERED"
   | "CANCELLED";
 
 export type KitPickupPaymentStatus =
@@ -24,16 +29,34 @@ export type ParticipantSnapshot = {
   externalRegistrationCode: string;
 };
 
+export type KitPickupRequestTimeline = {
+  pickedUpAt: string | null;
+  custodyAt: string | null;
+  readyAt: string | null;
+  deliveredAt: string | null;
+};
+
+export type KitPickupRequestHandover = {
+  receivedByName: string;
+  notes: string | null;
+  deliveredAt: string;
+};
+
 export type KitPickupRequestItem = {
   id: string;
   status: KitPickupRequestStatus;
   statusLabel: string;
   paymentStatus: KitPickupPaymentStatus;
+  paymentStatusLabel: string;
   registrationMode: "internal" | "external";
   feeAmount: string | null;
   feeCurrency: string | null;
   event: { id: string; name: string; slug: string };
-  service: { id: string; title: string };
+  service: {
+    id: string;
+    title: string;
+    pickupLabel: string | null;
+  };
   registrationId: string | null;
   participant: ParticipantSnapshot | null;
   term: {
@@ -41,6 +64,8 @@ export type KitPickupRequestItem = {
     accepted: boolean;
     acceptedAt: string | null;
   };
+  timeline: KitPickupRequestTimeline;
+  handover: KitPickupRequestHandover | null;
   createdAt: string;
   updatedAt: string;
 };

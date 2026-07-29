@@ -24,6 +24,22 @@ function run(): void {
     assert(env.AUTH_SECRET === base.AUTH_SECRET, "valid env keeps AUTH_SECRET");
     assert(env.NODE_ENV === "production", "valid production NODE_ENV");
     assert(env.PAYMENT_PROVIDER === "mock", "default payment provider is mock");
+    assert(
+      Array.isArray(env.KIT_PICKUP_OPERATOR_USER_IDS) &&
+        env.KIT_PICKUP_OPERATOR_USER_IDS.length === 0,
+      "default operator allowlist empty",
+    );
+  }
+
+  {
+    const env = validateEnv({
+      ...base,
+      KIT_PICKUP_OPERATOR_USER_IDS: "usr_a, usr_b",
+    });
+    assert(
+      env.KIT_PICKUP_OPERATOR_USER_IDS.join(",") === "usr_a,usr_b",
+      "operator allowlist parsed",
+    );
   }
 
   {

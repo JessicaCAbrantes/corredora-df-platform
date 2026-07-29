@@ -11,11 +11,25 @@ export type KitPickupRequestTermDto = {
   acceptedAt: string | null;
 };
 
+export type KitPickupRequestTimelineDto = {
+  pickedUpAt: string | null;
+  custodyAt: string | null;
+  readyAt: string | null;
+  deliveredAt: string | null;
+};
+
+export type KitPickupRequestHandoverDto = {
+  receivedByName: string;
+  notes: string | null;
+  deliveredAt: string;
+};
+
 export type KitPickupRequestDto = {
   id: string;
   status: string;
   statusLabel: string;
   paymentStatus: string;
+  paymentStatusLabel: string;
   registrationMode: "internal" | "external";
   feeAmount: string | null;
   feeCurrency: string | null;
@@ -27,10 +41,13 @@ export type KitPickupRequestDto = {
   service: {
     id: string;
     title: string;
+    pickupLabel: string | null;
   };
   registrationId: string | null;
   participant: ParticipantSnapshotDto | null;
   term: KitPickupRequestTermDto;
+  timeline: KitPickupRequestTimelineDto;
+  handover: KitPickupRequestHandoverDto | null;
   createdAt: string;
   updatedAt: string;
 };

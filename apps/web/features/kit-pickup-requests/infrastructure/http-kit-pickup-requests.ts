@@ -2,10 +2,12 @@ import type {
   CreateKitPickupRequestInput,
   CurrentTermResult,
   KitPickupPaymentStatus,
+  KitPickupRequestHandover,
   KitPickupRequestItem,
   KitPickupRequestListResult,
   KitPickupRequestResult,
   KitPickupRequestStatus,
+  KitPickupRequestTimeline,
   ParticipantSnapshot,
   StartPaymentResult,
 } from "../types/kit-pickup-request";
@@ -26,6 +28,11 @@ function isStatus(value: unknown): value is KitPickupRequestStatus {
     value === "PAYMENT_PENDING" ||
     value === "PAID" ||
     value === "WAIVED" ||
+    value === "PICKUP_PENDING" ||
+    value === "PICKED_UP" ||
+    value === "IN_CUSTODY" ||
+    value === "READY_FOR_HANDOVER" ||
+    value === "DELIVERED" ||
     value === "CANCELLED"
   );
 }
@@ -55,6 +62,40 @@ function mapParticipant(raw: unknown): ParticipantSnapshot | null {
   };
 }
 
+function mapTimeline(raw: unknown): KitPickupRequestTimeline | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const nullableString = (value: unknown) =>
+    value === null || typeof value === "string" ? value : undefined;
+  const pickedUpAt = nullableString(row.pickedUpAt);
+  const custodyAt = nullableString(row.custodyAt);
+  const readyAt = nullableString(row.readyAt);
+  const deliveredAt = nullableString(row.deliveredAt);
+  if (
+    pickedUpAt === undefined ||
+    custodyAt === undefined ||
+    readyAt === undefined ||
+    deliveredAt === undefined
+  ) {
+    return null;
+  }
+  return { pickedUpAt, custodyAt, readyAt, deliveredAt };
+}
+
+function mapHandover(raw: unknown): KitPickupRequestHandover | null {
+  if (raw === null) return null;
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  if (typeof row.receivedByName !== "string") return null;
+  if (row.notes !== null && typeof row.notes !== "string") return null;
+  if (typeof row.deliveredAt !== "string") return null;
+  return {
+    receivedByName: row.receivedByName,
+    notes: row.notes,
+    deliveredAt: row.deliveredAt,
+  };
+}
+
 export function mapKitPickupRequestItem(
   raw: unknown,
 ): KitPickupRequestItem | null {
@@ -68,6 +109,7 @@ export function mapKitPickupRequestItem(
   if (!isStatus(row.status)) return null;
   if (typeof row.statusLabel !== "string") return null;
   if (!isPaymentStatus(row.paymentStatus)) return null;
+  if (typeof row.paymentStatusLabel !== "string") return null;
   if (row.registrationMode !== "internal" && row.registrationMode !== "external") {
     return null;
   }
@@ -78,6 +120,13 @@ export function mapKitPickupRequestItem(
   if (!service || typeof service.id !== "string" || typeof service.title !== "string") {
     return null;
   }
+  const pickupLabel =
+    service.pickupLabel === null || service.pickupLabel === undefined
+      ? null
+      : typeof service.pickupLabel === "string"
+        ? service.pickupLabel
+        : undefined;
+  if (pickupLabel === undefined) return null;
   if (row.registrationId !== null && typeof row.registrationId !== "string") {
     return null;
   }
@@ -89,16 +138,25 @@ export function mapKitPickupRequestItem(
     return null;
   }
 
+  const timeline = mapTimeline(row.timeline);
+  if (!timeline) return null;
+
+  const handover = mapHandover(row.handover);
+  if (row.handover !== null && row.handover !== undefined && handover === null) {
+    return null;
+  }
+
   return {
     id: row.id,
     status: row.status,
     statusLabel: row.statusLabel,
     paymentStatus: row.paymentStatus,
+    paymentStatusLabel: row.paymentStatusLabel,
     registrationMode: row.registrationMode,
     feeAmount: row.feeAmount,
     feeCurrency: row.feeCurrency,
     event: { id: event.id, name: event.name, slug: event.slug },
-    service: { id: service.id, title: service.title },
+    service: { id: service.id, title: service.title, pickupLabel },
     registrationId: row.registrationId,
     participant: mapParticipant(row.participant),
     term: {
@@ -106,6 +164,8 @@ export function mapKitPickupRequestItem(
       accepted: term.accepted,
       acceptedAt: term.acceptedAt,
     },
+    timeline,
+    handover,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

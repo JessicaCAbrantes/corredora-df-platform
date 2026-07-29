@@ -101,13 +101,18 @@ model KitPickupService {
   @@map("kit_pickup_services")
 }
 
-/// Participant-facing request lifecycle (Phase 2). Operational pickup states = Phase 2.1.
+/// Participant + operational lifecycle (Phase 2 + 2.1).
 enum KitPickupRequestStatus {
   TERM_PENDING
   TERM_ACCEPTED
   PAYMENT_PENDING
   PAID
   WAIVED
+  PICKUP_PENDING
+  PICKED_UP
+  IN_CUSTODY
+  READY_FOR_HANDOVER
+  DELIVERED
   CANCELLED
 }
 
@@ -137,6 +142,16 @@ model KitPickupRequest {
   paymentStatus        KitPickupPaymentStatus @default(UNPAID) @map("payment_status")
   feeAmountSnapshot    Decimal?               @map("fee_amount_snapshot") @db.Decimal(10, 2)
   feeCurrencySnapshot  String?                @map("fee_currency_snapshot")
+  pickedUpAt           DateTime?              @map("picked_up_at")
+  pickedUpBy           String?                @map("picked_up_by")
+  custodyAt            DateTime?              @map("custody_at")
+  custodyBy            String?                @map("custody_by")
+  readyAt              DateTime?              @map("ready_at")
+  readyBy              String?                @map("ready_by")
+  deliveredAt          DateTime?              @map("delivered_at")
+  deliveredBy          String?                @map("delivered_by")
+  receivedByName       String?                @map("received_by_name")
+  handoverNotes        String?                @map("handover_notes")
   createdAt            DateTime               @default(now()) @map("created_at")
   updatedAt            DateTime               @updatedAt @map("updated_at")
 
@@ -150,6 +165,10 @@ model KitPickupRequest {
   @@index([kitPickupServiceId])
   @@index([status])
   @@index([createdAt])
+  @@index([pickedUpAt])
+  @@index([custodyAt])
+  @@index([readyAt])
+  @@index([deliveredAt])
   @@map("kit_pickup_requests")
 }
 

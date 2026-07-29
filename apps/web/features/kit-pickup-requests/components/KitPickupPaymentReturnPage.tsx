@@ -1,31 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Footer } from "../../../../../packages/ui/src/components/Footer";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
+import { buildLoginUrl } from "../../events/auth/build-login-url";
 import { getKitPickupRequest } from "../services";
 import type { KitPickupRequestItem } from "../types";
 
 type Props = { mode: "success" | "cancel" };
 
+type PollState =
+  | { status: "loading" }
+  | { status: "pending"; item: KitPickupRequestItem }
+  | { status: "ready"; item: KitPickupRequestItem }
+  | { status: "error"; reason: "missing_id" | "unauthorized" | "network" };
+
+function isPaymentSettled(item: KitPickupRequestItem): boolean {
+  return (
+    item.status === "PICKUP_PENDING" ||
+    item.paymentStatus === "PAID" ||
+    item.paymentStatus === "WAIVED" ||
+    item.paymentStatus === "FAILED"
+  );
+}
+
 /**
  * After gateway redirect — never trusts the return alone; polls backend status.
  */
 export function KitPickupPaymentReturnPage({ mode }: Props) {
+  const router = useRouter();
   const params = useSearchParams();
   const requestId = params.get("requestId");
-  const [item, setItem] = useState<KitPickupRequestItem | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    requestId ? "loading" : "error",
+  const [pollState, setPollState] = useState<PollState>(
+    requestId ? { status: "loading" } : { status: "error", reason: "missing_id" },
   );
 
   useEffect(() => {
-    if (!requestId) {
-      return;
-    }
+    if (!requestId) return;
 
     let cancelled = false;
     let attempts = 0;
@@ -33,21 +47,32 @@ export function KitPickupPaymentReturnPage({ mode }: Props) {
     async function poll() {
       const result = await getKitPickupRequest(requestId!);
       if (cancelled) return;
+
       if (!result.ok) {
-        setStatus("error");
+        if (result.reason === "UNAUTHORIZED") {
+          router.replace(
+            buildLoginUrl(
+              `/kit-pickup-requests/payment/${mode}?requestId=${encodeURIComponent(requestId!)}`,
+            ),
+          );
+          return;
+        }
+        setPollState({ status: "error", reason: "network" });
         return;
       }
-      setItem(result.data);
-      if (
-        result.data.status === "PAID" ||
-        result.data.status === "WAIVED" ||
-        result.data.paymentStatus === "FAILED" ||
-        attempts >= 8
-      ) {
-        setStatus("ready");
+
+      if (isPaymentSettled(result.data)) {
+        setPollState({ status: "ready", item: result.data });
         return;
       }
+
+      if (attempts >= 8) {
+        setPollState({ status: "pending", item: result.data });
+        return;
+      }
+
       attempts += 1;
+      setPollState({ status: "loading" });
       window.setTimeout(() => {
         void poll();
       }, 1500);
@@ -57,7 +82,15 @@ export function KitPickupPaymentReturnPage({ mode }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [requestId]);
+  }, [mode, requestId, router]);
+
+  useEffect(() => {
+    if (pollState.status !== "ready" || !requestId) return;
+    const timeout = window.setTimeout(() => {
+      router.replace(`/kit-pickup-requests/${requestId}`);
+    }, 2000);
+    return () => window.clearTimeout(timeout);
+  }, [pollState, requestId, router]);
 
   return (
     <Layout className="kit-pickup-page">
@@ -67,29 +100,61 @@ export function KitPickupPaymentReturnPage({ mode }: Props) {
           <h1 className="kit-pickup-page__title">
             {mode === "success" ? "Retorno do pagamento" : "Pagamento cancelado"}
           </h1>
-          {status === "loading" ? (
-            <p role="status">Confirmando status no servidor…</p>
-          ) : null}
-          {status === "error" ? (
-            <p role="alert">Não foi possível confirmar o status.</p>
-          ) : null}
-          {status === "ready" && item ? (
-            <p>
-              Status atual: <strong>{item.statusLabel}</strong> (
-              {item.paymentStatus})
+
+          {pollState.status === "loading" ? (
+            <p role="status">
+              Confirmando status no servidor… A confirmação pode levar alguns
+              instantes.
             </p>
           ) : null}
-          {requestId ? (
-            <p>
-              <Link href={`/kit-pickup-requests/${requestId}`}>
-                Ver solicitação
-              </Link>
-            </p>
-          ) : (
-            <p>
-              <Link href="/kit-pickup-requests">Minhas solicitações</Link>
-            </p>
-          )}
+
+          {pollState.status === "error" ? (
+            <div role="alert">
+              <p>
+                {pollState.reason === "missing_id"
+                  ? "Não foi possível identificar a solicitação."
+                  : "Não foi possível confirmar o status do pagamento."}
+              </p>
+              <p>
+                <Link href="/kit-pickup-requests">Minhas solicitações</Link>
+              </p>
+            </div>
+          ) : null}
+
+          {pollState.status === "pending" ? (
+            <div role="status">
+              <p>
+                Ainda estamos aguardando a confirmação do pagamento. Isso pode
+                levar alguns instantes.
+              </p>
+              <p>
+                Status atual: <strong>{pollState.item.statusLabel}</strong>
+              </p>
+              {requestId ? (
+                <p>
+                  <Link href={`/kit-pickup-requests/${requestId}`}>
+                    Ver detalhes da solicitação
+                  </Link>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {pollState.status === "ready" ? (
+            <div role="status">
+              <p>
+                Status atual: <strong>{pollState.item.statusLabel}</strong>
+              </p>
+              <p>Redirecionando para os detalhes da solicitação…</p>
+              {requestId ? (
+                <p>
+                  <Link href={`/kit-pickup-requests/${requestId}`}>
+                    Ver solicitação agora
+                  </Link>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </main>
       <Footer />

@@ -252,9 +252,10 @@ export class KitPickupRequestsService {
     }
 
     const hasFee = row.feeAmountSnapshot != null;
+    // No fee → payment waived and immediately eligible for operations.
     const nextStatus = hasFee
       ? KitPickupRequestStatus.PAYMENT_PENDING
-      : KitPickupRequestStatus.WAIVED;
+      : KitPickupRequestStatus.PICKUP_PENDING;
     const nextPayment = hasFee
       ? KitPickupPaymentStatus.PENDING
       : KitPickupPaymentStatus.WAIVED;
@@ -299,14 +300,14 @@ export class KitPickupRequestsService {
       return { data: toKitPickupRequestDto(row) };
     }
 
-    // Phase 2.1 will block cancel after PICKED_UP. Phase 2 allows cancel
-    // for all participant statuses that exist today.
+    // Participant may cancel before physical pickup (Phase 2.1).
     const cancellable: KitPickupRequestStatus[] = [
       KitPickupRequestStatus.TERM_PENDING,
       KitPickupRequestStatus.TERM_ACCEPTED,
       KitPickupRequestStatus.PAYMENT_PENDING,
       KitPickupRequestStatus.PAID,
       KitPickupRequestStatus.WAIVED,
+      KitPickupRequestStatus.PICKUP_PENDING,
     ];
 
     if (!cancellable.includes(row.status)) {

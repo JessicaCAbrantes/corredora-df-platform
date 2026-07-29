@@ -267,10 +267,15 @@ export class PaymentsService {
       );
     }
 
-    // Idempotent success
+    // Idempotent success (PAID or already advanced to operational queue)
     if (
       payment.status === KitPickupPaymentRecordStatus.PAID &&
-      payment.request.status === KitPickupRequestStatus.PAID
+      (payment.request.status === KitPickupRequestStatus.PAID ||
+        payment.request.status === KitPickupRequestStatus.PICKUP_PENDING ||
+        payment.request.status === KitPickupRequestStatus.PICKED_UP ||
+        payment.request.status === KitPickupRequestStatus.IN_CUSTODY ||
+        payment.request.status === KitPickupRequestStatus.READY_FOR_HANDOVER ||
+        payment.request.status === KitPickupRequestStatus.DELIVERED)
     ) {
       return;
     }
@@ -294,7 +299,8 @@ export class PaymentsService {
       this.prisma.kitPickupRequest.update({
         where: { id: payment.kitPickupRequestId },
         data: {
-          status: KitPickupRequestStatus.PAID,
+          // Auto-enter operational queue after gateway confirmation.
+          status: KitPickupRequestStatus.PICKUP_PENDING,
           paymentStatus: KitPickupPaymentStatus.PAID,
         },
       }),

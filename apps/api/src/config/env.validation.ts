@@ -19,6 +19,11 @@ export type Env = {
   STRIPE_SECRET_KEY: string | null;
   /** Required when PAYMENT_PROVIDER=stripe */
   STRIPE_WEBHOOK_SECRET: string | null;
+  /**
+   * Comma-separated User.id allowlist for Kit Pickup Operations (Phase 2.1).
+   * MVP only — not a full RBAC.
+   */
+  KIT_PICKUP_OPERATOR_USER_IDS: string[];
 };
 
 function requireString(value: unknown, key: string): string {
@@ -100,6 +105,12 @@ export function validateEnv(config: Record<string, unknown>): Env {
       paymentWebhookSecret ?? defaultWebhookSecretForMock(authSecret);
   }
 
+  const operatorIdsRaw = optionalString(config.KIT_PICKUP_OPERATOR_USER_IDS) ?? "";
+  const operatorIds = operatorIdsRaw
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
+
   return {
     PORT: port,
     NODE_ENV: nodeEnv,
@@ -113,5 +124,6 @@ export function validateEnv(config: Record<string, unknown>): Env {
     PAYMENT_WEBHOOK_SECRET: paymentWebhookSecret,
     STRIPE_SECRET_KEY: stripeSecretKey,
     STRIPE_WEBHOOK_SECRET: stripeWebhookSecret,
+    KIT_PICKUP_OPERATOR_USER_IDS: operatorIds,
   };
 }

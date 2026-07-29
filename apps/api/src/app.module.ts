@@ -6,6 +6,7 @@ import { validateEnv } from "./config/env.validation";
 import { CouponsModule } from "./coupons/coupons.module";
 import { EventsModule } from "./events/events.module";
 import { HealthModule } from "./health/health.module";
+import { KitPickupOperationsModule } from "./kit-pickup-operations/kit-pickup-operations.module";
 import { KitPickupRequestsModule } from "./kit-pickup-requests/kit-pickup-requests.module";
 import { KitPickupServicesModule } from "./kit-pickup-services/kit-pickup-services.module";
 import { PartnersModule } from "./partners/partners.module";
@@ -28,6 +29,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     BlogModule,
     KitPickupServicesModule,
     PaymentsModule,
+    KitPickupOperationsModule,
     KitPickupRequestsModule,
   ],
 })

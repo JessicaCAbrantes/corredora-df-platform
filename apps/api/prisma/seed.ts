@@ -148,9 +148,11 @@ async function seedAuthUser(): Promise<void> {
   const email = SEED_USER_EMAIL.trim().toLowerCase();
   const passwordHash = hashPassword(SEED_USER_PASSWORD);
 
+  // Fixed id so local KIT_PICKUP_OPERATOR_USER_IDS can reference a stable value.
   await prisma.user.upsert({
     where: { email },
     create: {
+      id: "usr_seed_runner",
       email,
       passwordHash,
     },
