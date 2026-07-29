@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate (API)
+        run: pnpm --filter api prisma:generate
+
+      - name: Lint API
+        run: pnpm --filter api lint
+
+      - name: Typecheck API
+        run: pnpm --filter api typecheck
+
+      - name: Unit tests API
+        run: pnpm --filter api test
+
+      - name: Lint Web
+        run: pnpm --filter web lint
+
+      - name: Unit tests Web
+        run: pnpm --filter web test
+
+  integration:
+    name: Integration / E2E
+    runs-on: ubuntu-latest
+    needs: quality
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: corredora
+          POSTGRES_PASSWORD: corredora
+          POSTGRES_DB: corredora_df
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U corredora -d corredora_df"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://corredora:corredora@localhost:5432/corredora_df?schema=public
+      AUTH_SECRET: ci-test-auth-secret-must-be-long-enough-for-hmac
+      CORS_ORIGIN: http://localhost:3000
+      PAYMENT_PROVIDER: mock
+      PUBLIC_API_BASE_URL: http://localhost:3001
+      PAYMENT_SUCCESS_URL: http://localhost:3000/kit-pickup-requests/payment/success
+      PAYMENT_CANCEL_URL: http://localhost:3000/kit-pickup-requests/payment/cancel
+      KIT_PICKUP_OPERATOR_USER_IDS: usr_seed_runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        working-directory: apps/api
+        run: pnpm prisma:generate
+
+      - name: Prisma migrate deploy
+        working-directory: apps/api
+        run: pnpm exec prisma migrate deploy
+
+      - name: Prisma seed
+        working-directory: apps/api
+        run: pnpm prisma:seed
+
+      - name: E2E tests
+        working-directory: apps/api
+        run: pnpm test:e2e
