@@ -21,7 +21,7 @@ KIT_PICKUP_OPERATOR_USER_IDS=usr_seed_runner
 
 Após `pnpm prisma:seed`, o usuário `runner@corredora.df` é criado com id `usr_seed_runner` (em bancos novos). Em bancos já existentes, use o `id` retornado por `GET /api/v1/auth/me`.
 
-MVP allowlist — **não** é RBAC completo.
+MVP allowlist — **não** é RBAC completo. Inventário completo de envs: [setup/environment.md](../setup/environment.md).
 
 ## Estados
 

@@ -25,20 +25,22 @@ document.cookie = `token=${jwt}`; // sem httpOnly
 
 ## Variáveis de ambiente
 
+Inventário completo (API + Web + CI + Docker): [docs/setup/environment.md](../setup/environment.md).
+
 ```text
-# .env.local (NUNCA commitar)
-NEXT_PUBLIC_API_URL=http://localhost:3001   # ✅ prefixo NEXT_PUBLIC_ para cliente
-API_SECRET=abc123                            # ✅ sem prefixo = apenas servidor
+# apps/web/.env.local (NUNCA commitar) — ver apps/web/.env.example
+NEXT_PUBLIC_API_URL=http://localhost:3001   # ✅ único env público do Web hoje
 ```
 
-| Prefixo | Acesso | Exemplo |
+Secrets da API (`AUTH_SECRET`, `DATABASE_URL`, Stripe, webhook) vivem em `apps/api/.env` — **nunca** com prefixo `NEXT_PUBLIC_`.
+
+| Prefixo | Acesso | Exemplo no projeto |
 |---|---|---|
-| `NEXT_PUBLIC_` | Cliente e servidor | URL da API pública |
-| Sem prefixo | Apenas servidor | Chaves secretas, tokens de serviço |
+| `NEXT_PUBLIC_` | Cliente e servidor | `NEXT_PUBLIC_API_URL` |
+| Sem prefixo | Apenas servidor (API Nest) | `AUTH_SECRET`, `DATABASE_URL` |
 
 - `.env` e `.env.local` estão no `.gitignore`.
-- Criar `.env.example` com variáveis necessárias (sem valores reais).
-
+- Templates commitáveis: `apps/api/.env.example`, `apps/web/.env.example`.
 ## Input e XSS
 
 ```tsx

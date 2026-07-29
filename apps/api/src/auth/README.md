@@ -37,6 +37,8 @@ Password is never stored in plaintext — only `password_hash` in DB.
 
 ## Environment
 
+Full env reference: [`docs/setup/environment.md`](../../../../docs/setup/environment.md).
+
 ```text
 AUTH_SECRET=<long random string>   # required; boot fails if missing/blank
 ```
@@ -45,7 +47,6 @@ AUTH_SECRET=<long random string>   # required; boot fails if missing/blank
 2. Replace `AUTH_SECRET` with a long random value (never commit `.env`).
 3. Generate locally: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`
 4. Restart the API after changing the secret (existing cookies become invalid).
-
 ## Login brute-force protection
 
 | Setting | Value |

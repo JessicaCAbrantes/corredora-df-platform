@@ -60,4 +60,5 @@ Esta documentação em `docs/api/` representa **v1**. Alterações no contrato s
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1`;
 ```
 
-Variável de ambiente `NEXT_PUBLIC_API_URL` sem o prefixo de versão — versão definida no client.
+Variável de ambiente `NEXT_PUBLIC_API_URL` sem o prefixo de versão — versão definida no client.  
+Template e inventário: [setup/environment.md](../setup/environment.md), [`apps/web/.env.example`](../../apps/web/.env.example).
