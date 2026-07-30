@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type Session = { userId: string };
 
 export type GetSession = () => Promise<Session | null>;
@@ -14,11 +16,6 @@ type ApiMeBody = {
   };
 };
 
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
-
 /**
  * HTTP Adapter — GET /api/v1/auth/me
  *
@@ -31,7 +28,7 @@ function getDefaultBaseUrl(): string {
 export function createHttpGetSession(
   options: HttpGetSessionOptions = {},
 ): GetSession {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getSession(): Promise<Session | null> {

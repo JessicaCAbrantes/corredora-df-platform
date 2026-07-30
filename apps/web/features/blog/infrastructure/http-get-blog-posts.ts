@@ -4,6 +4,7 @@ import type {
   GetBlogPostsListParams,
   GetBlogPostsListResult,
 } from "../types/blog-posts-list";
+import { env } from "@/lib/env";
 
 type HttpBlogPostDto = {
   id: string;
@@ -44,11 +45,6 @@ export type HttpGetBlogPostsOptions = {
 };
 
 const GENERIC_ERROR_MESSAGE = "Não foi possível carregar o blog.";
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 export function buildBlogPostsListQuery(params: GetBlogPostsListParams): string {
   const query = new URLSearchParams();
@@ -133,7 +129,7 @@ function errorResult(message?: string): GetBlogPostsListResult {
 export function createHttpGetBlogPosts(
   options: HttpGetBlogPostsOptions = {},
 ): HttpGetBlogPosts {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpGetBlogPosts(

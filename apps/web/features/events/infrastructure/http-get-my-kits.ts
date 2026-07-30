@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type MyKitEvent = {
   id: string;
   slug: string;
@@ -25,11 +27,6 @@ export type HttpGetMyKitsOptions = {
 type ApiMyKitsBody = {
   data?: unknown;
 };
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 function mapItem(raw: unknown): MyKitItem | null {
   if (!raw || typeof raw !== "object") return null;
@@ -70,7 +67,7 @@ function mapItem(raw: unknown): MyKitItem | null {
 export function createHttpGetMyKits(
   options: HttpGetMyKitsOptions = {},
 ): () => Promise<GetMyKitsResult> {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getMyKits(): Promise<GetMyKitsResult> {

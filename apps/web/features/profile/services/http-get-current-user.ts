@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type CurrentUser = {
   id: string;
   email: string;
@@ -21,11 +23,6 @@ type ApiMeBody = {
   };
 };
 
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
-
 /**
  * HTTP Adapter — GET /api/v1/auth/me for Profile MVP.
  *
@@ -35,7 +32,7 @@ function getDefaultBaseUrl(): string {
 export function createHttpGetCurrentUser(
   options: HttpGetCurrentUserOptions = {},
 ): () => Promise<GetCurrentUserResult> {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getCurrentUser(): Promise<GetCurrentUserResult> {

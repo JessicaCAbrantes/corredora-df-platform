@@ -4,6 +4,7 @@ import type {
   KitPickupServiceListItem,
   KitPickupServicesListPagination,
 } from "../types/kit-pickup-services-list";
+import { env } from "@/lib/env";
 
 type HttpEventDto = {
   id: string;
@@ -53,11 +54,6 @@ export type HttpGetKitPickupServicesOptions = {
 const GENERIC_ERROR_MESSAGE =
   "Não foi possível carregar os serviços de retirada.";
 const KIT_PICKUP_LIST_HREF = "/kit-pickup";
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 export function buildKitPickupServicesListQuery(
   params: GetKitPickupServicesListParams,
@@ -161,7 +157,7 @@ function errorResult(message?: string): GetKitPickupServicesListResult {
 export function createHttpGetKitPickupServices(
   options: HttpGetKitPickupServicesOptions = {},
 ): HttpGetKitPickupServices {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpGetKitPickupServices(

@@ -4,6 +4,7 @@ import type {
   GetCouponsListParams,
   GetCouponsListResult,
 } from "../types/coupons-list";
+import { env } from "@/lib/env";
 
 type HttpCouponPartnerDto = {
   id: string;
@@ -49,11 +50,6 @@ export type HttpGetCouponsOptions = {
 
 const GENERIC_ERROR_MESSAGE = "Não foi possível carregar os cupons.";
 const COUPONS_LIST_HREF = "/cupons";
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 export function buildCouponsListQuery(params: GetCouponsListParams): string {
   const query = new URLSearchParams();
@@ -144,7 +140,7 @@ function errorResult(message?: string): GetCouponsListResult {
 export function createHttpGetCoupons(
   options: HttpGetCouponsOptions = {},
 ): HttpGetCoupons {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpGetCoupons(

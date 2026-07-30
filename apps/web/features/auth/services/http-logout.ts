@@ -1,14 +1,11 @@
+import { env } from "@/lib/env";
+
 export type LogoutResult = { ok: true } | { ok: false };
 
 export type HttpLogoutOptions = {
   baseUrl?: string;
   fetchFn?: typeof fetch;
 };
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 /**
  * HTTP Adapter — POST /api/v1/auth/logout
@@ -21,7 +18,7 @@ function getDefaultBaseUrl(): string {
 export function createHttpLogout(
   options: HttpLogoutOptions = {},
 ): () => Promise<LogoutResult> {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpLogout(): Promise<LogoutResult> {
