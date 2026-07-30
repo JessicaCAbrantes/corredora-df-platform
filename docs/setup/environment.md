@@ -2,7 +2,7 @@
 
 Reference for all environment variables used by the Corredora DF Platform (API, Web, local Docker, and CI).
 
-> **Scope (FASE 2.2 — docs only):** this document describes current usage. Startup validation for the Web app and production secret management are follow-up work.
+> **Scope (FASE 2.2):** inventory + secrets strategy for Production Readiness. Runtime rules such as rejecting `PAYMENT_PROVIDER=mock` in production are tracked as future hardening (not yet enforced).
 
 ## Quick start (local)
 
@@ -83,17 +83,17 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 
 ## Web (`apps/web`)
 
-No startup validation yet (`apps/web/lib/env.ts` is a stub).  
+Validated lazily via [`apps/web/lib/env.ts`](../../apps/web/lib/env.ts) (`env.apiUrl`).  
 Template: [`apps/web/.env.example`](../../apps/web/.env.example).  
 Prefer `.env.local` for local overrides (Next.js convention).
 
 | Variable | Type | Required | Default | Purpose | If missing |
 |---|---|---|---|---|---|
-| `NEXT_PUBLIC_API_URL` | PUBLIC | **De facto yes** for local/full-stack | `""` | Base URL of the Nest API (no trailing slash) | Client calls resolve against the Next origin and fail to reach the API |
+| `NEXT_PUBLIC_API_URL` | PUBLIC | **Yes in production** | `http://localhost:3001` in development/test | Base URL of the Nest API (no trailing slash) | Dev/test: fallback localhost; production: throws |
 
 ### Notes (Web)
 
-- Used by HTTP adapters under `apps/web/features/**` (auth, events, kit pickup, blog, partners, coupons, etc.).
+- HTTP adapters use `options.baseUrl ?? env.apiUrl` (injection preserved for tests).
 - Must match the API listen URL (`PUBLIC_API_BASE_URL` / `PORT`).
 - Browser-visible: never put secrets in `NEXT_PUBLIC_*`.
 - Security guidance: [`docs/engineering/08-security.md`](../engineering/08-security.md).
@@ -121,22 +121,80 @@ Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
 | Job | Env set for the app? |
 |---|---|
 | Quality Gate | No app env (unit tests set `AUTH_SECRET` where needed) |
-| Integration / E2E | Yes — see below |
+| Integration / E2E | Yes — **CI-only fixtures** (see below) |
 
-Integration job (current fixtures, not GitHub Secrets):
+### CI-only fixtures (Integration / E2E)
 
-| Variable | Example value in CI |
+Values in the Integration job `env:` and Postgres service are **deliberately non-production**.
+
+**Never reuse these values in staging or production.**
+
+| Variable | Role in CI |
 |---|---|
 | `NODE_ENV` | `test` |
-| `DATABASE_URL` | `postgresql://corredora:corredora@localhost:5432/...` |
-| `AUTH_SECRET` | test fixture string |
-| `CORS_ORIGIN` | `http://localhost:3000` |
-| `PAYMENT_PROVIDER` | `mock` |
-| `PUBLIC_API_BASE_URL` | `http://localhost:3001` |
-| `PAYMENT_SUCCESS_URL` / `PAYMENT_CANCEL_URL` | localhost web payment paths |
-| `KIT_PICKUP_OPERATOR_USER_IDS` | `usr_seed_runner` |
+| `DATABASE_URL` | Fixture connection string (weak test credentials) |
+| `AUTH_SECRET` | Fixture HMAC secret |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Fixture DB container |
+| `CORS_ORIGIN` | Fixture (`http://localhost:3000`) |
+| `PAYMENT_PROVIDER` | Fixture (`mock` — no Stripe in CI) |
+| `PUBLIC_API_BASE_URL` / payment URLs | Fixture localhost URLs |
+| `KIT_PICKUP_OPERATOR_USER_IDS` | Fixture seed user id (`usr_seed_runner`) |
 
-`PORT` and `PAYMENT_WEBHOOK_SECRET` rely on API defaults. Web `NEXT_PUBLIC_API_URL` is not required for current CI (no Web E2E against a live API).
+`PORT` and `PAYMENT_WEBHOOK_SECRET` rely on API defaults (mock webhook secret is derived from `AUTH_SECRET` in non-production mock mode). Web `NEXT_PUBLIC_API_URL` is not required for current CI (unit tests inject `baseUrl`).
+
+GitHub Actions **CI does not** and **must not** load production or staging secrets.
+
+---
+
+## Secrets strategy (approved — FASE 2.2.4 / 2.2.5)
+
+### Categories
+
+| Category | Where it lives | Examples |
+|---|---|---|
+| **CI fixtures** | Workflow YAML (Integration job) | Test `DATABASE_URL`, test `AUTH_SECRET`, mock payments, localhost URLs |
+| **Public build variables** | Build env / GitHub Variables / host build settings | `NEXT_PUBLIC_API_URL` |
+| **Configuration / variables** | `.env`, Variables, or runtime config (not credentials) | `CORS_ORIGIN`, `PUBLIC_API_BASE_URL`, `PAYMENT_*_URL`, `PAYMENT_PROVIDER`, `KIT_PICKUP_OPERATOR_USER_IDS` |
+| **Runtime secrets** | Secret store of the deploy host (or future GitHub Environments with CD) | See table below |
+| **GitHub Secrets** | Only when a CI/CD job truly needs them | **Not used by current CI** |
+| **GitHub Environments** | Future — with automated CD | Not created yet |
+
+### Runtime secrets (staging / production)
+
+These must come from the runtime / secret store — **never** from CI fixtures or committed examples:
+
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | Strong credentials; managed DB |
+| `AUTH_SECRET` | Long random; rotate independently of CI |
+| `PAYMENT_WEBHOOK_SECRET` | **Explicit** in production (do not rely on AUTH_SECRET derivation) |
+| `STRIPE_SECRET_KEY` | When `PAYMENT_PROVIDER=stripe` |
+| `STRIPE_WEBHOOK_SECRET` | When `PAYMENT_PROVIDER=stripe` |
+
+### Public build variables
+
+| Variable | Notes |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Embedded in the browser bundle — treat as public |
+
+### Configuration / variables
+
+| Variable | Notes |
+|---|---|
+| `CORS_ORIGIN` | Web origin allowed by the API |
+| `PUBLIC_API_BASE_URL` | Public API origin (e.g. mock checkout links) |
+| `PAYMENT_SUCCESS_URL` | Post-payment redirect |
+| `PAYMENT_CANCEL_URL` | Cancel redirect |
+| `PAYMENT_PROVIDER` | `mock` locally/CI; production should use an approved provider (e.g. `stripe`) — runtime fail-closed for mock-in-production is future hardening |
+| `KIT_PICKUP_OPERATOR_USER_IDS` | MVP allowlist (not a credential; manage as config) |
+
+### Rules
+
+1. CI fixtures ≠ staging/production secrets.
+2. CI must not access production secrets.
+3. Never put secrets in `NEXT_PUBLIC_*`.
+4. Do not commit real `.env` / `.env.local` files.
+5. GitHub Environments and production GitHub Secrets wait until CD exists.
 
 ---
 
@@ -145,22 +203,24 @@ Integration job (current fixtures, not GitHub Secrets):
 | Topic | Local (Docker Compose) | CI Integration |
 |---|---|---|
 | Postgres host port | **5433** | **5432** |
-| `DATABASE_URL` | use `:5433` (see API `.env.example`) | `:5432` |
+| `DATABASE_URL` | use `:5433` (see API `.env.example`) | `:5432` (fixture) |
 | `NODE_ENV` | `development` | `test` |
 | Web env | `.env.local` with `NEXT_PUBLIC_API_URL` | not set for Integration job |
-| Secrets storage | developer `.env` (gitignored) | plaintext fixtures in workflow YAML |
+| Secrets storage | developer `.env` (gitignored) | CI-only fixtures in workflow YAML |
 
 ---
 
 ## Staging / production (planned)
 
-No staging/production env manifests live in the repo yet. When deploying, plan at least:
+No staging/production env manifests live in the repo yet. When deploying:
 
-**API (secrets / config):** `DATABASE_URL`, `AUTH_SECRET`, `CORS_ORIGIN`, `PUBLIC_API_BASE_URL`, payment URLs, `PAYMENT_PROVIDER` (+ Stripe secrets or explicit mock policy), `KIT_PICKUP_OPERATOR_USER_IDS`, `PORT` / platform port binding.
+**Runtime secrets:** `DATABASE_URL`, `AUTH_SECRET`, `PAYMENT_WEBHOOK_SECRET`, and Stripe keys when applicable.
+
+**Configuration:** `CORS_ORIGIN`, `PUBLIC_API_BASE_URL`, payment URLs, `PAYMENT_PROVIDER`, `KIT_PICKUP_OPERATOR_USER_IDS`, `PORT`.
 
 **Web (build-time):** `NEXT_PUBLIC_API_URL` pointing at the public API origin.
 
-Use the host’s secret store (e.g. GitHub Environments, Vercel/host secrets). Do not reuse CI or `.env.example` placeholder secrets.
+Use the host’s secret store (or GitHub Environments once CD exists). **Do not reuse CI fixtures or `.env.example` placeholders.**
 
 ---
 
