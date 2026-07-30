@@ -81,6 +81,8 @@ Campos **nunca** expostos ao participante: `pickedUpBy`, `custodyBy`, `readyBy`,
 | `mock` (default local/CI) | Checkout HTML + HMAC `X-Corredora-Payment-Signature` |
 | `stripe` | Stripe Checkout Session + `Stripe-Signature` |
 
+Variáveis relacionadas (`PAYMENT_*`, `STRIPE_*`, `PUBLIC_API_BASE_URL`): [setup/environment.md](../setup/environment.md).
+
 ## Compatibilidade
 
 - `GET /kit-pickup-services` (Fase 1) inalterado
