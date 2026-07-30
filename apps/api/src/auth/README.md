@@ -8,7 +8,7 @@
 - Password hashed with `node:crypto` scrypt (`scrypt$salt$hash`)
 - Stateless session in HttpOnly cookie `corredora_session`
 - HMAC-SHA256 signed payload `{ userId, exp }` using `AUTH_SECRET`
-- Real Auth Boundary: `resolveCurrentUserId(request): string | null`
+- Real Auth Boundary: `AuthBoundaryService.resolveCurrentUserId(request)` (secret via ConfigService); pure helper `resolveCurrentUserId(request, secret)` for tests
 - In-memory brute-force protection on `POST /auth/login`
 
 ## Endpoints implemented

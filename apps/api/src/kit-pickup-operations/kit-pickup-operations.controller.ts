@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
-import { resolveCurrentUserId } from "../auth/auth.boundary";
+import { AuthBoundaryService } from "../auth/auth.boundary";
 import type { Env } from "../config/env.validation";
 import { assertKitPickupOperator } from "./assert-kit-pickup-operator";
 import { HandoverDto, ListOperationsQueryDto } from "./dto/operations.dto";
@@ -27,6 +27,7 @@ export class KitPickupOperationsController {
   constructor(
     private readonly operations: KitPickupOperationsService,
     private readonly config: ConfigService<Env, true>,
+    private readonly authBoundary: AuthBoundaryService,
   ) {}
 
   @Get("operations")
@@ -80,7 +81,7 @@ export class KitPickupOperationsController {
   }
 
   private requireOperator(request: Request): string {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
     if (!userId) {
       throw new HttpException(
         {

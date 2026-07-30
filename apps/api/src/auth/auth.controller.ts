@@ -10,14 +10,17 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { resolveCurrentUserId } from "./auth.boundary";
+import { AuthBoundaryService } from "./auth.boundary";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { SESSION_COOKIE_NAME } from "./session-cookie";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly authBoundary: AuthBoundaryService,
+  ) {}
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
@@ -45,7 +48,7 @@ export class AuthController {
   async me(
     @Req() request: Request,
   ): Promise<{ data: { id: string; email: string } }> {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
     if (!userId) {
       throw new HttpException(
         {

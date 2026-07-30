@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../auth/auth.module";
 import { PrismaModule } from "../prisma/prisma.module";
 import { KitPickupOperationsController } from "./kit-pickup-operations.controller";
 import { KitPickupOperationsService } from "./kit-pickup-operations.service";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [KitPickupOperationsController],
   providers: [KitPickupOperationsService],
 })

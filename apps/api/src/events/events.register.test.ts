@@ -92,14 +92,14 @@ async function run(): Promise<void> {
   // --- Real Auth Boundary ---
   assert(
     resolveCurrentUserId(
-      mockRequest(`${SESSION_COOKIE_NAME}=${token}`),
+      mockRequest(`${SESSION_COOKIE_NAME}=${token}`), process.env.AUTH_SECRET ?? "",
     ) === AUTH_USER_ID,
     "valid session → User.id",
   );
-  assert(resolveCurrentUserId(mockRequest()) === null, "no cookie → null");
+  assert(resolveCurrentUserId(mockRequest(), process.env.AUTH_SECRET ?? "") === null, "no cookie → null");
   assert(
     resolveCurrentUserId(
-      mockRequest(`${SESSION_COOKIE_NAME}=${token}x`),
+      mockRequest(`${SESSION_COOKIE_NAME}=${token}x`), process.env.AUTH_SECRET ?? "",
     ) === null,
     "tampered → null",
   );
@@ -111,7 +111,7 @@ async function run(): Promise<void> {
     };
     req.body = { userId: "attacker_user" };
     assert(
-      resolveCurrentUserId(req) === AUTH_USER_ID,
+      resolveCurrentUserId(req, process.env.AUTH_SECRET ?? "") === AUTH_USER_ID,
       "body.userId is ignored",
     );
   }

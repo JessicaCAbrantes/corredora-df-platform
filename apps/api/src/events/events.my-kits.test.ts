@@ -13,7 +13,10 @@ import {
 } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import type { Request } from "express";
-import { resolveCurrentUserId } from "../auth/auth.boundary";
+import {
+  AuthBoundaryService,
+  resolveCurrentUserId,
+} from "../auth/auth.boundary";
 import { createSessionToken, SESSION_COOKIE_NAME } from "../auth/session-cookie";
 import { EventsController } from "./events.controller";
 import { EventsService } from "./events.service";
@@ -74,6 +77,12 @@ function createService(prisma: PrismaMock): EventsService {
   return new EventsService(prisma as never);
 }
 
+function createAuthBoundary(
+  secret = process.env.AUTH_SECRET ?? "",
+): AuthBoundaryService {
+  return new AuthBoundaryService({ get: () => secret } as never);
+}
+
 const USER_A = "usr_a";
 const USER_B = "usr_b";
 
@@ -91,7 +100,7 @@ async function run(): Promise<void> {
         },
       },
     });
-    const controller = new EventsController(service);
+    const controller = new EventsController(service, createAuthBoundary());
 
     try {
       await controller.listMyKits(mockRequest());
@@ -111,7 +120,7 @@ async function run(): Promise<void> {
   }
 
   assert(
-    resolveCurrentUserId(mockRequest(`${SESSION_COOKIE_NAME}=${tokenA}`)) ===
+    resolveCurrentUserId(mockRequest(`${SESSION_COOKIE_NAME}=${tokenA}`), process.env.AUTH_SECRET ?? "") ===
       USER_A,
     "session → User A",
   );
@@ -167,6 +176,7 @@ async function run(): Promise<void> {
 
     const result = await new EventsController(
       createService(prisma),
+      createAuthBoundary(),
     ).listMyKits(mockRequest(`${SESSION_COOKIE_NAME}=${tokenA}`));
 
     assert(capture.where?.userId === USER_A, "where.userId === User A");
@@ -285,7 +295,10 @@ async function run(): Promise<void> {
         },
       },
     };
-    await new EventsController(createService(prisma)).listMyKits(req);
+    await new EventsController(
+      createService(prisma),
+      createAuthBoundary(),
+    ).listMyKits(req);
     assert(
       filterCapture.userId === USER_A,
       "client userId ignored — session User A only",

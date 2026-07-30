@@ -13,7 +13,10 @@ import {
 } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import type { Request } from "express";
-import { resolveCurrentUserId } from "../auth/auth.boundary";
+import {
+  AuthBoundaryService,
+  resolveCurrentUserId,
+} from "../auth/auth.boundary";
 import { createSessionToken, SESSION_COOKIE_NAME } from "../auth/session-cookie";
 import { EventsController } from "./events.controller";
 import { EventsService } from "./events.service";
@@ -68,6 +71,12 @@ function createService(prisma: PrismaMock): EventsService {
   return new EventsService(prisma as never);
 }
 
+function createAuthBoundary(
+  secret = process.env.AUTH_SECRET ?? "",
+): AuthBoundaryService {
+  return new AuthBoundaryService({ get: () => secret } as never);
+}
+
 async function expectHttpError(
   fn: () => Promise<unknown>,
   status: number,
@@ -109,7 +118,7 @@ async function run(): Promise<void> {
       },
     });
     try {
-      await new EventsController(service).cancelRegistration(
+      await new EventsController(service, createAuthBoundary()).cancelRegistration(
         "evt_01_meia",
         mockRequest(),
       );
@@ -121,7 +130,7 @@ async function run(): Promise<void> {
   }
 
   assert(
-    resolveCurrentUserId(mockRequest(`${SESSION_COOKIE_NAME}=${tokenA}`)) ===
+    resolveCurrentUserId(mockRequest(`${SESSION_COOKIE_NAME}=${tokenA}`), process.env.AUTH_SECRET ?? "") ===
       USER_A,
     "session → User A",
   );
@@ -144,7 +153,10 @@ async function run(): Promise<void> {
       },
     };
 
-    await new EventsController(createService(prisma)).cancelRegistration(
+    await new EventsController(
+      createService(prisma),
+      createAuthBoundary(),
+    ).cancelRegistration(
       "evt_01_meia",
       mockRequest(`${SESSION_COOKIE_NAME}=${tokenA}`),
     );
@@ -249,7 +261,10 @@ async function run(): Promise<void> {
     req.body = { userId: USER_B };
     req.query = { userId: USER_B };
 
-    await new EventsController(createService(prisma)).cancelRegistration(
+    await new EventsController(
+      createService(prisma),
+      createAuthBoundary(),
+    ).cancelRegistration(
       "evt_01_meia",
       req,
     );

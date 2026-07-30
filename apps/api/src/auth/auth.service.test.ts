@@ -106,14 +106,14 @@ async function run(): Promise<void> {
     const liveToken = createSessionToken("usr_boundary_01", secret);
     assert(
       resolveCurrentUserId(
-        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}`),
+        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}`), process.env.AUTH_SECRET ?? "",
       ) === "usr_boundary_01",
       "valid cookie → userId",
     );
-    assert(resolveCurrentUserId(mockRequest()) === null, "no cookie → null");
+    assert(resolveCurrentUserId(mockRequest(), process.env.AUTH_SECRET ?? "") === null, "no cookie → null");
     assert(
       resolveCurrentUserId(
-        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}tampered`),
+        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}tampered`), process.env.AUTH_SECRET ?? "",
       ) === null,
       "tampered cookie → null",
     );
@@ -121,7 +121,7 @@ async function run(): Promise<void> {
     const expired = createSessionToken("usr_x", secret, 1_000_000_000, 1);
     assert(
       resolveCurrentUserId(
-        mockRequest(`${SESSION_COOKIE_NAME}=${expired}`),
+        mockRequest(`${SESSION_COOKIE_NAME}=${expired}`), process.env.AUTH_SECRET ?? "",
       ) === null,
       "expired cookie → null",
     );
@@ -130,14 +130,14 @@ async function run(): Promise<void> {
       body: { userId: "attacker" },
     } as Partial<Request>);
     assert(
-      resolveCurrentUserId(withBody) === "usr_boundary_01",
+      resolveCurrentUserId(withBody, process.env.AUTH_SECRET ?? "") === "usr_boundary_01",
       "body.userId ignored",
     );
 
     process.env.AUTH_SECRET = "";
     assert(
       resolveCurrentUserId(
-        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}`),
+        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}`), process.env.AUTH_SECRET ?? "",
       ) === null,
       "missing AUTH_SECRET → null (no mock fallback)",
     );
@@ -145,7 +145,7 @@ async function run(): Promise<void> {
 
     assert(
       resolveCurrentUserId(
-        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}`),
+        mockRequest(`${SESSION_COOKIE_NAME}=${liveToken}`), process.env.AUTH_SECRET ?? "",
       ) !== "user_mock_01",
       "no user_mock_01 fallback",
     );

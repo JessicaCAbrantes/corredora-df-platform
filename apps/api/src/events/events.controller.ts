@@ -11,7 +11,7 @@ import {
   Req,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { resolveCurrentUserId } from "../auth/auth.boundary";
+import { AuthBoundaryService } from "../auth/auth.boundary";
 import { ListEventsQueryDto } from "./dto/list-events-query.dto";
 import { EventsService } from "./events.service";
 import type {
@@ -24,7 +24,10 @@ import type {
 
 @Controller("events")
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly authBoundary: AuthBoundaryService,
+  ) {}
 
   @Get()
   list(@Query() query: ListEventsQueryDto): Promise<EventsListResponse> {
@@ -45,7 +48,7 @@ export class EventsController {
   async listMyRegistrations(
     @Req() request: Request,
   ): Promise<MyRegistrationsResponse> {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
 
     if (!userId) {
       throw new HttpException(
@@ -72,7 +75,7 @@ export class EventsController {
    */
   @Get("me/kits")
   async listMyKits(@Req() request: Request): Promise<MyKitsResponse> {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
 
     if (!userId) {
       throw new HttpException(
@@ -102,7 +105,7 @@ export class EventsController {
     @Param("id") id: string,
     @Req() request: Request,
   ): Promise<RegisterForEventResponse> {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
 
     if (!userId) {
       throw new HttpException(
@@ -133,7 +136,7 @@ export class EventsController {
     @Param("id") id: string,
     @Req() request: Request,
   ): Promise<void> {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
 
     if (!userId) {
       throw new HttpException(

@@ -224,6 +224,83 @@ Use the host’s secret store (or GitHub Environments once CD exists). **Do not 
 
 ---
 
+## Cookie / CORS / CSRF strategy (approved)
+
+### Target topology (same-site + reverse proxy)
+
+```text
+Browser
+   |
+   v
+https://app.example.com          (Next.js Web)
+   |
+   | same-site reverse proxy
+   v
+https://app.example.com/api/*    → NestJS API
+```
+
+Web and API should share the **same site** via reverse proxy of `/api` to the Nest process. Split-domain (`app.` + `api.`) is **not** the target architecture.
+
+### Session cookie
+
+| Attribute | Value |
+|---|---|
+| Name | `corredora_session` |
+| HttpOnly | yes |
+| Path | `/` |
+| SameSite | `Lax` |
+| Secure | `true` when `NODE_ENV=production` (HTTPS) |
+| Domain | host-only (omit `Domain`) |
+
+Do **not** use `SameSite=None` under the recommended topology. If split-domain is adopted later, cookies/CSRF must be re-reviewed.
+
+### CORS
+
+- Explicit single origin via `CORS_ORIGIN` (no `*`)
+- `credentials: true` so the browser can send the session cookie
+
+**CORS does not replace CSRF protection.**
+
+### CSRF
+
+Under same-site + `SameSite=Lax`, mutable endpoints remain `POST`/`DELETE`. No CSRF token library in this phase. Revisit if topology changes.
+
+### Auth secret source
+
+Runtime reads `AUTH_SECRET` only through validated Nest `ConfigService` (`AuthBoundaryService`). Do not dual-read `process.env.AUTH_SECRET` in domain code.
+
+### Operator allowlist
+
+`KIT_PICKUP_OPERATOR_USER_IDS` is parsed once in env validation and consumed via `ConfigService` (MVP allowlist — not RBAC).
+
+---
+
+## Rate limiting (current limitations)
+
+Login brute-force protection (`LoginAttemptLimiter`):
+
+- **In-memory**, per Node process
+- Default: 5 failed attempts / 15 minutes / IP+email
+- Process restart clears counters
+- Multiple API instances do **not** share state — distributed limiting (e.g. Redis) is required before multi-instance production
+- Behind a reverse proxy / load balancer, `request.ip` / trust-proxy must be reviewed before production
+
+No Redis / `@nestjs/throttler` in this phase.
+
+---
+
+## Health probes
+
+| Endpoint | Meaning | HTTP |
+|---|---|---|
+| `GET /health/live` | Process alive (no DB) | 200 |
+| `GET /health/ready` | Ready for traffic (DB `SELECT 1`) | 200 ready / **503** not ready |
+| `GET /health` | Legacy — always 200; body includes `database: up\|down` | 200 |
+
+Prefer `/health/live` and `/health/ready` for orchestration.
+
+---
+
 ## Packages
 
 `packages/*` currently do not read environment variables.
