@@ -4,6 +4,7 @@ import type {
   RegisterForEventInput,
   RegisterForEventResult,
 } from "../application/register-for-event";
+import { env } from "@/lib/env";
 
 type ApiErrorBody = {
   error?: {
@@ -24,7 +25,7 @@ type ApiSuccessBody = {
 };
 
 export type HttpRegisterForEventOptions = {
-  /** Defaults to `NEXT_PUBLIC_API_URL` (no trailing slash). */
+  /** Defaults to `env.apiUrl` (no trailing slash). */
   baseUrl?: string;
   /** Injected for tests — defaults to global `fetch`. */
   fetchFn?: typeof fetch;
@@ -70,11 +71,6 @@ function resolveRegistrationId(body: ApiSuccessBody): string {
   return "reg_confirmed";
 }
 
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
-
 /**
  * HTTP Adapter for `RegisterForEvent`.
  * Speaks the external world (`POST /api/v1/events/:id/register`);
@@ -83,7 +79,7 @@ function getDefaultBaseUrl(): string {
 export function createHttpRegisterForEvent(
   options: HttpRegisterForEventOptions = {},
 ): RegisterForEvent {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpRegisterForEvent(

@@ -11,15 +11,11 @@ import type {
   ParticipantSnapshot,
   StartPaymentResult,
 } from "../types/kit-pickup-request";
+import { env } from "@/lib/env";
 
 type ApiErrorBody = {
   error?: { code?: string; message?: string; status?: number };
 };
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 function isStatus(value: unknown): value is KitPickupRequestStatus {
   return (
@@ -199,7 +195,7 @@ export type HttpKitPickupOptions = {
 export function createHttpCreateKitPickupRequest(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function createKitPickupRequest(
@@ -236,7 +232,7 @@ export function createHttpCreateKitPickupRequest(
 export function createHttpGetMyKitPickupRequests(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getMyKitPickupRequests(): Promise<KitPickupRequestListResult> {
@@ -265,7 +261,7 @@ export function createHttpGetMyKitPickupRequests(
 export function createHttpGetKitPickupRequest(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getKitPickupRequest(
@@ -301,7 +297,7 @@ export function createHttpGetKitPickupRequest(
 export function createHttpAcceptKitPickupTerm(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function acceptKitPickupTerm(
@@ -337,7 +333,7 @@ export function createHttpAcceptKitPickupTerm(
 export function createHttpCancelKitPickupRequest(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function cancelKitPickupRequest(
@@ -373,7 +369,7 @@ export function createHttpCancelKitPickupRequest(
 export function createHttpStartKitPickupPayment(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function startKitPickupPayment(
@@ -430,7 +426,7 @@ export function createHttpStartKitPickupPayment(
 export function createHttpGetCurrentKitPickupTerm(
   options: HttpKitPickupOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getCurrentKitPickupTerm(): Promise<CurrentTermResult> {

@@ -5,6 +5,7 @@ import type {
   GetEventsListParams,
   GetEventsListResult,
 } from "../types/events-list";
+import { env } from "@/lib/env";
 
 /**
  * HTTP-local types — mirror of the documented GET /api/v1/events contract.
@@ -49,18 +50,13 @@ export type HttpGetEvents = (
 ) => Promise<GetEventsListResult>;
 
 export type HttpGetEventsOptions = {
-  /** Defaults to `NEXT_PUBLIC_API_URL` (no trailing slash). */
+  /** Defaults to `env.apiUrl` (no trailing slash). */
   baseUrl?: string;
   /** Injected for tests — defaults to global `fetch`. */
   fetchFn?: typeof fetch;
 };
 
 const GENERIC_ERROR_MESSAGE = "Não foi possível carregar as corridas.";
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 /**
  * Serializes normalized Application params into the HTTP query.
@@ -198,7 +194,7 @@ function errorResult(message?: string): GetEventsListResult {
 export function createHttpGetEvents(
   options: HttpGetEventsOptions = {},
 ): HttpGetEvents {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpGetEvents(

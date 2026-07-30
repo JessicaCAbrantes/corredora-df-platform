@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type MyRegistrationEvent = {
   id: string;
   slug: string;
@@ -28,11 +30,6 @@ export type HttpGetMyRegistrationsOptions = {
 type ApiMyRegistrationsBody = {
   data?: unknown;
 };
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 function isLifecycleStatus(
   value: unknown,
@@ -95,7 +92,7 @@ function mapItem(raw: unknown): MyRegistrationItem | null {
 export function createHttpGetMyRegistrations(
   options: HttpGetMyRegistrationsOptions = {},
 ): () => Promise<GetMyRegistrationsResult> {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getMyRegistrations(): Promise<GetMyRegistrationsResult> {

@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type LoginInput = {
   email: string;
   password: string;
@@ -35,11 +37,6 @@ type ApiSuccessBody = {
   };
 };
 
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
-
 export function mapLoginError(params: {
   status: number;
   code?: string;
@@ -60,7 +57,7 @@ export function mapLoginError(params: {
 export function createHttpLogin(
   options: HttpLoginOptions = {},
 ): (input: LoginInput) => Promise<LoginResult> {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpLogin(input: LoginInput): Promise<LoginResult> {

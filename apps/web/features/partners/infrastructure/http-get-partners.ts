@@ -4,6 +4,7 @@ import type {
   PartnerListItem,
   PartnersListPagination,
 } from "../types/partners-list";
+import { env } from "@/lib/env";
 
 type HttpPartnerDto = {
   id: string;
@@ -45,11 +46,6 @@ export type HttpGetPartnersOptions = {
 
 const GENERIC_ERROR_MESSAGE = "Não foi possível carregar os parceiros.";
 const PARTNERS_DETAIL_BASE_HREF = "/parceiros";
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 export function buildPartnersListQuery(params: GetPartnersListParams): string {
   const query = new URLSearchParams();
@@ -118,7 +114,7 @@ function errorResult(message?: string): GetPartnersListResult {
 export function createHttpGetPartners(
   options: HttpGetPartnersOptions = {},
 ): HttpGetPartners {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpGetPartners(

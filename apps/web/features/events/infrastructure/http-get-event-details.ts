@@ -3,6 +3,7 @@ import type {
   EventDetailsFetchResult,
   EventRegistrationStatus,
 } from "../types/event-details";
+import { env } from "@/lib/env";
 
 /**
  * HTTP-local types — mirror of GET /api/v1/events/by-slug/:slug.
@@ -57,7 +58,7 @@ export type HttpGetEventDetails = (
 ) => Promise<EventDetailsFetchResult>;
 
 export type HttpGetEventDetailsOptions = {
-  /** Defaults to `NEXT_PUBLIC_API_URL` (no trailing slash). */
+  /** Defaults to `env.apiUrl` (no trailing slash). */
   baseUrl?: string;
   /** Injected for tests — defaults to global `fetch`. */
   fetchFn?: typeof fetch;
@@ -76,10 +77,6 @@ const LIFECYCLE_STATUSES = new Set(["active", "cancelled", "completed"]);
 
 function normalizeBaseUrl(raw: string): string {
   return raw.replace(/\/$/, "");
-}
-
-function getDefaultBaseUrl(): string {
-  return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL ?? "");
 }
 
 const DATE_LABEL_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
@@ -276,7 +273,7 @@ function errorResult(message?: string): EventDetailsFetchResult {
 export function createHttpGetEventDetails(
   options: HttpGetEventDetailsOptions = {},
 ): HttpGetEventDetails {
-  const baseUrl = normalizeBaseUrl(options.baseUrl ?? getDefaultBaseUrl());
+  const baseUrl = normalizeBaseUrl(options.baseUrl ?? env.apiUrl);
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function httpGetEventDetails(

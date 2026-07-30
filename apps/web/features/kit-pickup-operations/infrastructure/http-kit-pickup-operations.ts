@@ -7,15 +7,11 @@ import type {
   OperationsListParams,
   OperationsListResult,
 } from "../types/kit-pickup-operations";
+import { env } from "@/lib/env";
 
 type ApiErrorBody = {
   error?: { code?: string; message?: string; status?: number };
 };
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 function isStatus(value: unknown): value is OperationalRequestStatus {
   return (
@@ -237,7 +233,7 @@ export type HttpKitPickupOperationsOptions = {
 export function createHttpGetKitPickupOperations(
   options: HttpKitPickupOperationsOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function getKitPickupOperations(
@@ -292,7 +288,7 @@ function createTransitionRequest(
   options: HttpKitPickupOperationsOptions,
   body?: unknown,
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function transition(id: string): Promise<OperationalActionResult> {
@@ -343,7 +339,7 @@ export function createHttpMarkKitPickupReady(
 export function createHttpHandoverKitPickupRequest(
   options: HttpKitPickupOperationsOptions = {},
 ) {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function handover(

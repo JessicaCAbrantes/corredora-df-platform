@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 export type CancelEventRegistrationResult =
   | { ok: true }
   | { ok: false; reason: "UNAUTHORIZED" | "NOT_FOUND" | "NETWORK" | "UNKNOWN" };
@@ -6,11 +8,6 @@ export type HttpCancelEventRegistrationOptions = {
   baseUrl?: string;
   fetchFn?: typeof fetch;
 };
-
-function getDefaultBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return raw.replace(/\/$/, "");
-}
 
 /**
  * HTTP Adapter — DELETE /api/v1/events/:id/register.
@@ -22,7 +19,7 @@ function getDefaultBaseUrl(): string {
 export function createHttpCancelEventRegistration(
   options: HttpCancelEventRegistrationOptions = {},
 ): (eventId: string) => Promise<CancelEventRegistrationResult> {
-  const baseUrl = options.baseUrl ?? getDefaultBaseUrl();
+  const baseUrl = options.baseUrl ?? env.apiUrl;
   const fetchFn = options.fetchFn ?? fetch;
 
   return async function cancelEventRegistration(
