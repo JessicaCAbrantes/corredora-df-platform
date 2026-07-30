@@ -6,6 +6,10 @@ on:
     branches:
       - master
 
+# Least privilege — this workflow only checks out and runs tests.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,15 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: 11.12.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           # pnpm@11.12.0 requires Node >= 22.13 (uses node:sqlite).
           node-version: 22
@@ -59,6 +63,7 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
+          # CI-only Postgres fixtures — never reuse in staging or production.
           POSTGRES_USER: corredora
           POSTGRES_PASSWORD: corredora
           POSTGRES_DB: corredora_df
@@ -69,6 +74,18 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+    # ---------------------------------------------------------------------------
+    # CI-only test fixtures. These values are deliberately non-production.
+    # Never reuse them in staging or production.
+    # See docs/setup/environment.md — Secrets strategy.
+    # ---------------------------------------------------------------------------
+    # - DATABASE_URL          → fixture (test DB credentials)
+    # - AUTH_SECRET           → fixture (HMAC test secret)
+    # - POSTGRES_* (service)  → fixtures (see above)
+    # - PAYMENT_PROVIDER=mock → fixture (no Stripe in CI)
+    # - localhost URLs        → fixtures
+    # - KIT_PICKUP_OPERATOR_USER_IDS → fixture (seed user id)
+    # ---------------------------------------------------------------------------
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://corredora:corredora@localhost:5432/corredora_df?schema=public
@@ -81,15 +98,15 @@ jobs:
       KIT_PICKUP_OPERATOR_USER_IDS: usr_seed_runner
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: 11.12.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           # pnpm@11.12.0 requires Node >= 22.13 (uses node:sqlite).
           node-version: 22
