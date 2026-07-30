@@ -2,7 +2,7 @@ import { HttpException, HttpStatus } from "@nestjs/common";
 
 /**
  * Kit Pickup Operations — MVP operator allowlist (Phase 2.1).
- * Not a full RBAC. Reads KIT_PICKUP_OPERATOR_USER_IDS from env.
+ * Not a full RBAC. Allowlist must come from validated ConfigService.
  */
 export function parseKitPickupOperatorIds(
   raw: string | string[] | null | undefined,
@@ -23,9 +23,7 @@ export function parseKitPickupOperatorIds(
 
 export function isKitPickupOperator(
   userId: string,
-  allowlist: Iterable<string> = parseKitPickupOperatorIds(
-    process.env.KIT_PICKUP_OPERATOR_USER_IDS,
-  ),
+  allowlist: Iterable<string>,
 ): boolean {
   const set = allowlist instanceof Set ? allowlist : new Set(allowlist);
   return set.has(userId);
@@ -36,12 +34,9 @@ export function isKitPickupOperator(
  */
 export function assertKitPickupOperator(
   userId: string,
-  allowlist?: Iterable<string>,
+  allowlist: Iterable<string>,
 ): void {
-  const ids =
-    allowlist ??
-    parseKitPickupOperatorIds(process.env.KIT_PICKUP_OPERATOR_USER_IDS);
-  if (!isKitPickupOperator(userId, ids)) {
+  if (!isKitPickupOperator(userId, allowlist)) {
     throw new HttpException(
       {
         status: "error",

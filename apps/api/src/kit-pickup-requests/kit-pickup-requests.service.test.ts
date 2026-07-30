@@ -363,7 +363,7 @@ async function run(): Promise<void> {
       headers: { cookie: `${SESSION_COOKIE_NAME}=${token}` },
       body: { userId: "attacker" },
     } as never;
-    assert(resolveCurrentUserId(req) === USER, "userId from session only");
+    assert(resolveCurrentUserId(req, process.env.AUTH_SECRET ?? "") === USER, "userId from session only");
   }
 
   // --- Internal create ---

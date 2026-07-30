@@ -11,7 +11,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
-import { resolveCurrentUserId } from "../auth/auth.boundary";
+import { AuthBoundaryService } from "../auth/auth.boundary";
 import type { Env } from "../config/env.validation";
 import { PaymentsService } from "../payments/payments.service";
 import { CreateKitPickupRequestDto } from "./dto/create-kit-pickup-request.dto";
@@ -29,6 +29,7 @@ export class KitPickupRequestsController {
     private readonly requestsService: KitPickupRequestsService,
     private readonly paymentsService: PaymentsService,
     private readonly config: ConfigService<Env, true>,
+    private readonly authBoundary: AuthBoundaryService,
   ) {}
 
   @Get("term")
@@ -102,7 +103,7 @@ export class KitPickupRequestsController {
   }
 
   private requireUser(request: Request): string {
-    const userId = resolveCurrentUserId(request);
+    const userId = this.authBoundary.resolveCurrentUserId(request);
     if (!userId) {
       throw new HttpException(
         {

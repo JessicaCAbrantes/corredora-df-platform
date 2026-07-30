@@ -1,16 +1,28 @@
 import { RequestMethod, ValidationPipe, type INestApplication } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
+import helmet from "helmet";
 import { AppModule } from "../../../src/app.module";
 import type { Env } from "../../../src/config/env.validation";
+import { UnhandledExceptionFilter } from "../../../src/filters/unhandled-exception.filter";
 import { ValidationExceptionFilter } from "../../../src/filters/validation-exception.filter";
 
 export async function createTestApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService<Env, true>);
 
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+    }),
+  );
+
   app.setGlobalPrefix("api/v1", {
-    exclude: [{ path: "health", method: RequestMethod.GET }],
+    exclude: [
+      { path: "health", method: RequestMethod.GET },
+      { path: "health/live", method: RequestMethod.GET },
+      { path: "health/ready", method: RequestMethod.GET },
+    ],
   });
 
   app.enableCors({
@@ -27,7 +39,10 @@ export async function createTestApp(): Promise<INestApplication> {
     }),
   );
 
-  app.useGlobalFilters(new ValidationExceptionFilter());
+  app.useGlobalFilters(
+    new UnhandledExceptionFilter(),
+    new ValidationExceptionFilter(),
+  );
   await app.init();
   return app;
 }

@@ -19,8 +19,8 @@ localStorage.setItem("token", jwt);
 document.cookie = `token=${jwt}`; // sem httpOnly
 ```
 
-- Sessão gerenciada via cookies `httpOnly` + `secure` + `sameSite`.
-- Refresh token rotacionado pelo backend.
+- Sessão gerenciada via cookies `httpOnly` + `secure` (em production) + `sameSite=lax`.
+- Topologia alvo: same-site + reverse proxy `/api` — ver [setup/environment.md](../setup/environment.md).
 - Redirect para `/login` em respostas 401.
 
 ## Variáveis de ambiente
@@ -77,16 +77,18 @@ const apiClient = {
 - Aprovar builds explicitamente (`allowBuilds` no `pnpm-workspace.yaml`).
 - Não instalar pacotes sem necessidade — cada dependência é uma superfície de ataque.
 
-## Headers de segurança (futuro)
+## Headers de segurança (Web)
 
-Configurar no `next.config.ts` quando necessário:
+Configurados em `apps/web/next.config.ts` (sem CSP complexa; sem HSTS — HSTS fica no proxy/edge):
 
 ```text
-Content-Security-Policy
-X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
+X-Frame-Options: DENY
+Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
+
+API Nest aplica `helmet` com CSP desabilitada (compatível com mock checkout HTML). Detalhes de cookie/CORS/CSRF: [setup/environment.md](../setup/environment.md).
 
 ## Checklist
 

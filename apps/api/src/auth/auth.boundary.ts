@@ -1,4 +1,7 @@
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
+import type { Env } from "../config/env.validation";
 import {
   readCookieValue,
   SESSION_COOKIE_NAME,
@@ -11,28 +14,17 @@ import {
  * Resolves the authenticated `userId` from the signed HttpOnly session cookie.
  * Never accepts userId from body, query, route, or client-controlled headers.
  *
- * Swap point (same signature as Temporary Auth Boundary):
- *   resolveCurrentUserId(req): string | null
- *
- * No production fallback to user_mock_01.
- * No X-Corredora-Dev-Anonymous shortcut.
- * No DB lookup per request (stateless cookie).
+ * Secret comes only from validated ConfigService at runtime (single source of truth).
  */
-
-function resolveAuthSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (typeof secret !== "string" || secret.trim() === "") {
-    return "";
-  }
-  return secret;
-}
 
 /**
- * @returns opaque User.id, or null when unauthenticated.
+ * Pure resolver — secret must be supplied by the caller (ConfigService in runtime).
  */
-export function resolveCurrentUserId(request: Request): string | null {
-  const secret = resolveAuthSecret();
-  if (!secret) {
+export function resolveCurrentUserId(
+  request: Request,
+  secret: string,
+): string | null {
+  if (typeof secret !== "string" || secret.trim() === "") {
     return null;
   }
 
@@ -42,4 +34,14 @@ export function resolveCurrentUserId(request: Request): string | null {
       : undefined;
   const token = readCookieValue(raw, SESSION_COOKIE_NAME);
   return verifySessionToken(token, secret);
+}
+
+@Injectable()
+export class AuthBoundaryService {
+  constructor(private readonly config: ConfigService<Env, true>) {}
+
+  resolveCurrentUserId(request: Request): string | null {
+    const secret = this.config.get("AUTH_SECRET", { infer: true });
+    return resolveCurrentUserId(request, secret);
+  }
 }
