@@ -38,24 +38,24 @@ enum EventCategory {
 }
 
 model Event {
-  id                 String                   @id
+  id                 String                  @id
   name               String
-  slug               String                   @unique
+  slug               String                  @unique
   date               DateTime
   city               String
   category           EventCategory
   distance           String
   status             EventLifecycleStatus
-  registrationStatus EventRegistrationStatus  @map("registration_status")
-  registrationMode   EventRegistrationMode    @default(internal) @map("registration_mode")
-  coverImage         String                   @map("cover_image")
-  priceAmount        Decimal?                 @map("price_amount") @db.Decimal(10, 2)
-  priceCurrency      String?                  @map("price_currency")
-  createdAt          DateTime                 @default(now()) @map("created_at")
+  registrationStatus EventRegistrationStatus @map("registration_status")
+  registrationMode   EventRegistrationMode   @default(internal) @map("registration_mode")
+  coverImage         String                  @map("cover_image")
+  priceAmount        Decimal?                @map("price_amount") @db.Decimal(10, 2)
+  priceCurrency      String?                 @map("price_currency")
+  createdAt          DateTime                @default(now()) @map("created_at")
 
-  registrations     EventRegistration[]
-  kit               Kit?
-  kitPickupService  KitPickupService?
+  registrations    EventRegistration[]
+  kit              Kit?
+  kitPickupService KitPickupService?
 
   @@index([date])
   @@index([status])
@@ -92,7 +92,7 @@ model KitPickupService {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  event    Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event    Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   requests KitPickupRequest[]
 
   @@index([serviceAvailable])
@@ -134,27 +134,28 @@ enum KitPickupPaymentRecordStatus {
 
 /// Authenticated intent to use a KitPickupService (Phase 2).
 model KitPickupRequest {
-  id                   String                 @id @default(cuid())
-  userId               String                 @map("user_id")
-  kitPickupServiceId   String                 @map("kit_pickup_service_id")
-  registrationId       String?                @map("registration_id")
-  status               KitPickupRequestStatus @default(TERM_PENDING)
-  paymentStatus        KitPickupPaymentStatus @default(UNPAID) @map("payment_status")
-  feeAmountSnapshot    Decimal?               @map("fee_amount_snapshot") @db.Decimal(10, 2)
-  feeCurrencySnapshot  String?                @map("fee_currency_snapshot")
-  pickedUpAt           DateTime?              @map("picked_up_at")
-  pickedUpBy           String?                @map("picked_up_by")
-  custodyAt            DateTime?              @map("custody_at")
-  custodyBy            String?                @map("custody_by")
-  readyAt              DateTime?              @map("ready_at")
-  readyBy              String?                @map("ready_by")
-  deliveredAt          DateTime?              @map("delivered_at")
-  deliveredBy          String?                @map("delivered_by")
-  receivedByName       String?                @map("received_by_name")
-  handoverNotes        String?                @map("handover_notes")
-  createdAt            DateTime               @default(now()) @map("created_at")
-  updatedAt            DateTime               @updatedAt @map("updated_at")
+  id                  String                 @id @default(cuid())
+  userId              String                 @map("user_id")
+  kitPickupServiceId  String                 @map("kit_pickup_service_id")
+  registrationId      String?                @map("registration_id")
+  status              KitPickupRequestStatus @default(TERM_PENDING)
+  paymentStatus       KitPickupPaymentStatus @default(UNPAID) @map("payment_status")
+  feeAmountSnapshot   Decimal?               @map("fee_amount_snapshot") @db.Decimal(10, 2)
+  feeCurrencySnapshot String?                @map("fee_currency_snapshot")
+  pickedUpAt          DateTime?              @map("picked_up_at")
+  pickedUpBy          String?                @map("picked_up_by")
+  custodyAt           DateTime?              @map("custody_at")
+  custodyBy           String?                @map("custody_by")
+  readyAt             DateTime?              @map("ready_at")
+  readyBy             String?                @map("ready_by")
+  deliveredAt         DateTime?              @map("delivered_at")
+  deliveredBy         String?                @map("delivered_by")
+  receivedByName      String?                @map("received_by_name")
+  handoverNotes       String?                @map("handover_notes")
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
 
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   kitPickupService KitPickupService      @relation(fields: [kitPickupServiceId], references: [id], onDelete: Cascade)
   registration     EventRegistration?    @relation(fields: [registrationId], references: [id], onDelete: SetNull)
   participant      ParticipantSnapshot?
@@ -220,15 +221,16 @@ model KitPickupPayment {
   @@map("kit_pickup_payments")
 }
 
-/// MVP registration row — userId is an opaque string (no FK to User yet; known debt).
+/// Registration row — userId references User (Restrict: keep history if delete is attempted).
 model EventRegistration {
   id        String   @id @default(cuid())
   eventId   String   @map("event_id")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  event              Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  kitPickupRequests  KitPickupRequest[]
+  event             Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  kitPickupRequests KitPickupRequest[]
 
   @@unique([eventId, userId])
   @@index([userId])
@@ -241,6 +243,9 @@ model User {
   email        String   @unique
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
+
+  registrations     EventRegistration[]
+  kitPickupRequests KitPickupRequest[]
 
   @@map("users")
 }
