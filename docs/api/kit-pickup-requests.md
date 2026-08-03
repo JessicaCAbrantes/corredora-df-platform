@@ -11,7 +11,7 @@ Solicitações autenticadas de serviço de retirada de kit (Fase 2).
 | `PickupTermAcceptance` versionado | ✅ |
 | Fee snapshot (`Decimal`) | ✅ |
 | Gateway (Stripe ou mock HMAC) | ✅ |
-| Webhook assinado + idempotente | ✅ |
+| Webhook assinado + idempotente por `event.id` (ledger) | ✅ FASE 3.4-C1/C2 |
 | Ownership / cancelamento participante | ✅ |
 | Pickup / custody / handover | ✅ Fase 2.1 — ver `kit-pickup-operations.md` |
 
@@ -73,6 +73,30 @@ PICKUP_PENDING → … → DELIVERED   (Fase 2.1 — Operators)
 Campos **nunca** expostos ao participante: `pickedUpBy`, `custodyBy`, `readyBy`, `deliveredBy`.
 
 `paymentStatus = PAID` somente via webhook validado.
+
+## Webhook (idempotência — FASE 3.4-C1/C2)
+
+```text
+POST /payments/webhook
+  → verify signature (Stripe / mock HMAC)
+  → resolve provider event id
+       Stripe: event.id
+       Mock: body.eventId ou mock_evt_<sha256(rawBody)>
+  → ledger UNIQUE(provider, event_id)
+       já PROCESSED? → HTTP 200 (sem reexecutar domínio)
+       senão → RECEIVED → aplicar domínio (se mapeado) → PROCESSED → HTTP 200
+```
+
+| Campo (tabela `payment_webhook_events`) | Uso |
+|---|---|
+| `provider` + `event_id` | Chave de deduplicação |
+| `received_at` / `processed_at` | Auditoria (recebeu? processou? quando?) |
+| `payload_hash` | Hash SHA-256 do raw body (opcional, preenchido) |
+| `status` | `RECEIVED` → `PROCESSED` |
+
+Idempotência primária = ledger por `event.id`. Soft-idempotência por estado do pagamento permanece como defesa em profundidade.
+
+**Fora deste PR:** locks/concorrência (3.4-C3), contrato HTTP permanente→2xx (3.4-C4).
 
 ## Gateway
 

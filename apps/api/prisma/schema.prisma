@@ -239,6 +239,28 @@ model KitPickupPayment {
   @@map("kit_pickup_payments")
 }
 
+/// Inbound payment webhook deliveries (FASE 3.4-C1/C2).
+/// Dedupes provider retries by UNIQUE(provider, event_id). Soft domain
+/// idempotency remains; this ledger is the primary short-circuit.
+enum PaymentWebhookEventStatus {
+  RECEIVED
+  PROCESSED
+}
+
+model PaymentWebhookEvent {
+  id          String                     @id @default(cuid())
+  provider    String
+  eventId     String                     @map("event_id")
+  status      PaymentWebhookEventStatus  @default(RECEIVED)
+  payloadHash String?                    @map("payload_hash")
+  receivedAt  DateTime                   @default(now()) @map("received_at")
+  processedAt DateTime?                  @map("processed_at")
+
+  @@unique([provider, eventId])
+  @@index([receivedAt])
+  @@map("payment_webhook_events")
+}
+
 /// Registration row — userId references User (Restrict: keep history if delete is attempted).
 model EventRegistration {
   id        String   @id @default(cuid())

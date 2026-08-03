@@ -1,9 +1,9 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type {
   CreateCheckoutInput,
   CreateCheckoutResult,
+  ParsedWebhook,
   PaymentGateway,
-  VerifiedPaymentEvent,
 } from "./payment-gateway";
 
 export type MockPaymentGatewayOptions = {
@@ -15,6 +15,9 @@ export type MockPaymentGatewayOptions = {
 /**
  * HMAC-signed mock gateway for local/CI without Stripe keys.
  * Webhook: POST /api/v1/payments/webhook with header X-Corredora-Payment-Signature.
+ *
+ * Synthetic event ids are stable for identical bodies (`mock_evt_<sha256>`),
+ * or an explicit `eventId` field in the JSON payload when provided.
  */
 export class MockPaymentGateway implements PaymentGateway {
   readonly provider = "mock";
@@ -44,7 +47,7 @@ export class MockPaymentGateway implements PaymentGateway {
   async verifyAndParseWebhook(params: {
     rawBody: Buffer;
     signatureHeader: string | undefined;
-  }): Promise<VerifiedPaymentEvent | null> {
+  }): Promise<ParsedWebhook> {
     if (!params.signatureHeader) {
       throw new Error("MISSING_SIGNATURE");
     }
@@ -75,9 +78,11 @@ export class MockPaymentGateway implements PaymentGateway {
     }
 
     const body = parsed as Record<string, unknown>;
+    const providerEventId = resolveMockProviderEventId(body, params.rawBody);
+
     const type = body.type;
     if (type !== "payment.paid" && type !== "payment.failed") {
-      return null;
+      return { providerEventId, event: null };
     }
 
     const providerPaymentId =
@@ -92,11 +97,14 @@ export class MockPaymentGateway implements PaymentGateway {
 
     if (type === "payment.failed") {
       return {
-        type: "payment.failed",
-        provider: this.provider,
-        providerPaymentId,
-        paymentId,
-        kitPickupRequestId,
+        providerEventId,
+        event: {
+          type: "payment.failed",
+          provider: this.provider,
+          providerPaymentId,
+          paymentId,
+          kitPickupRequestId,
+        },
       };
     }
 
@@ -107,13 +115,16 @@ export class MockPaymentGateway implements PaymentGateway {
     }
 
     return {
-      type: "payment.paid",
-      provider: this.provider,
-      providerPaymentId,
-      paymentId,
-      kitPickupRequestId,
-      amount,
-      currency,
+      providerEventId,
+      event: {
+        type: "payment.paid",
+        provider: this.provider,
+        providerPaymentId,
+        paymentId,
+        kitPickupRequestId,
+        amount,
+        currency,
+      },
     };
   }
 
@@ -124,14 +135,31 @@ export class MockPaymentGateway implements PaymentGateway {
     kitPickupRequestId: string;
     amount: string;
     currency: string;
+    /** Optional stable event id for tests; otherwise derived from body hash. */
+    eventId?: string;
   }): { body: string; signature: string } {
     const body = JSON.stringify({
       type: "payment.paid",
-      ...payload,
+      ...(payload.eventId ? { eventId: payload.eventId } : {}),
+      paymentId: payload.paymentId,
+      providerPaymentId: payload.providerPaymentId,
+      kitPickupRequestId: payload.kitPickupRequestId,
+      amount: payload.amount,
+      currency: payload.currency,
     });
     const signature = createHmac("sha256", this.options.webhookSecret)
       .update(body, "utf8")
       .digest("hex");
     return { body, signature: `sha256=${signature}` };
   }
+}
+
+function resolveMockProviderEventId(
+  body: Record<string, unknown>,
+  rawBody: Buffer,
+): string {
+  if (typeof body.eventId === "string" && body.eventId.trim() !== "") {
+    return body.eventId.trim();
+  }
+  return `mock_evt_${createHash("sha256").update(rawBody).digest("hex")}`;
 }

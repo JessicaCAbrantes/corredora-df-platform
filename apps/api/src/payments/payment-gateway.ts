@@ -34,6 +34,16 @@ export type VerifiedPaymentEvent =
     };
 
 /**
+ * Result of verifying a webhook delivery.
+ * `event` is null when the delivery is intentionally ignored (e.g. non-payment Stripe types).
+ * `providerEventId` is always set after a successful signature verify (Stripe `event.id` or mock synthetic id).
+ */
+export type ParsedWebhook = {
+  providerEventId: string;
+  event: VerifiedPaymentEvent | null;
+};
+
+/**
  * Thin payment gateway port — Stripe (prod) or Mock (local/CI).
  * Domain never sees card data.
  */
@@ -42,10 +52,10 @@ export interface PaymentGateway {
   createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult>;
   /**
    * Verify webhook authenticity and map to a domain event.
-   * Returns null when the event is ignored (e.g. non-payment event).
+   * Always returns a provider event id after successful verification.
    */
   verifyAndParseWebhook(params: {
     rawBody: Buffer;
     signatureHeader: string | undefined;
-  }): Promise<VerifiedPaymentEvent | null>;
+  }): Promise<ParsedWebhook>;
 }

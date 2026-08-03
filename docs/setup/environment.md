@@ -102,7 +102,7 @@ Validated in [`apps/api/src/config/env.validation.ts`](../../apps/api/src/config
 | Staging (planned) | `production` (or staging equivalent treated as prod) | `stripe` | Required | No mock |
 | Production | `production` | `stripe` | Required | No mock |
 
-Idempotency, webhook ledger, and payment ops runbooks are **out of scope** for 3.4-B (see 3.4-C / 3.4-D).
+Idempotency by webhook `event.id` (ledger) is implemented in FASE 3.4-C1/C2. Concurrency hardening and HTTP retry policy remain for 3.4-C3 / 3.4-C4. Ops runbooks are 3.4-D.
 
 ---
 
