@@ -609,19 +609,23 @@ async function run(): Promise<void> {
       currency: "BRL",
     });
 
-    const event = await gateway.verifyAndParseWebhook({
+    const parsed = await gateway.verifyAndParseWebhook({
       rawBody: Buffer.from(signed2.body, "utf8"),
       signatureHeader: signed2.signature,
     });
-    assert(event?.type === "payment.paid", "webhook parses paid");
-    await payments.handleVerifiedEvent(event!);
+    assert(parsed.event?.type === "payment.paid", "webhook parses paid");
+    assert(
+      parsed.providerEventId.startsWith("mock_evt_"),
+      "mock synthetic event id",
+    );
+    await payments.handleVerifiedEvent(parsed.event!);
 
     const paidRow = store.requests.get(created.data.id)!;
     assert(paidRow.status === "PICKUP_PENDING", "request PICKUP_PENDING via webhook");
     assert(paidRow.paymentStatus === "PAID", "paymentStatus PAID");
 
-    // idempotent webhook
-    await payments.handleVerifiedEvent(event!);
+    // idempotent webhook (domain soft-idempotency)
+    await payments.handleVerifiedEvent(parsed.event!);
     assert(
       store.requests.get(created.data.id)!.status === "PICKUP_PENDING",
       "idempotent",
@@ -653,12 +657,12 @@ async function run(): Promise<void> {
     paymentAfter.status = KitPickupPaymentRecordStatus.PENDING;
     paidRow.status = KitPickupRequestStatus.PAYMENT_PENDING;
     paidRow.paymentStatus = KitPickupPaymentStatus.PENDING;
-    const badEvent = await gateway.verifyAndParseWebhook({
+    const badParsed = await gateway.verifyAndParseWebhook({
       rawBody: Buffer.from(badAmount.body, "utf8"),
       signatureHeader: badAmount.signature,
     });
     await expectHttpError(
-      () => payments.handleVerifiedEvent(badEvent!),
+      () => payments.handleVerifiedEvent(badParsed.event!),
       409,
       "AMOUNT_MISMATCH",
     );

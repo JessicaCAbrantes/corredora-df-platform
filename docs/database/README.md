@@ -34,6 +34,7 @@ Documentação do banco de dados da plataforma Corredora DF.
 | Colunas | `snake_case` (`@map`) |
 | FKs de domínio / auditoria para `User` | `onDelete: Restrict`, `onUpdate: Cascade` |
 | Soft delete | não implementado (MVP) |
+| Webhook ledger | `payment_webhook_events` — UNIQUE(`provider`, `event_id`) (FASE 3.4-C1/C2) |
 
 ## Partial unique — Active Kit Pickup (decisão consciente)
 

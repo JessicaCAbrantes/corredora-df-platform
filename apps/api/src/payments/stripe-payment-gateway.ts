@@ -2,8 +2,8 @@ import Stripe from "stripe";
 import type {
   CreateCheckoutInput,
   CreateCheckoutResult,
+  ParsedWebhook,
   PaymentGateway,
-  VerifiedPaymentEvent,
 } from "./payment-gateway";
 
 export type StripePaymentGatewayOptions = {
@@ -80,7 +80,7 @@ export class StripePaymentGateway implements PaymentGateway {
   async verifyAndParseWebhook(params: {
     rawBody: Buffer;
     signatureHeader: string | undefined;
-  }): Promise<VerifiedPaymentEvent | null> {
+  }): Promise<ParsedWebhook> {
     if (!params.signatureHeader) {
       throw new Error("MISSING_SIGNATURE");
     }
@@ -96,6 +96,8 @@ export class StripePaymentGateway implements PaymentGateway {
       throw new Error("INVALID_SIGNATURE");
     }
 
+    const providerEventId = event.id;
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const paymentId = session.metadata?.paymentId ?? "";
@@ -105,7 +107,7 @@ export class StripePaymentGateway implements PaymentGateway {
       }
 
       if (session.payment_status !== "paid") {
-        return null;
+        return { providerEventId, event: null };
       }
 
       const amountTotal = session.amount_total;
@@ -114,13 +116,16 @@ export class StripePaymentGateway implements PaymentGateway {
       }
 
       return {
-        type: "payment.paid",
-        provider: this.provider,
-        providerPaymentId: session.id,
-        paymentId,
-        kitPickupRequestId,
-        amount: stripeAmountToDecimalString(amountTotal),
-        currency: (session.currency ?? "brl").toUpperCase(),
+        providerEventId,
+        event: {
+          type: "payment.paid",
+          provider: this.provider,
+          providerPaymentId: session.id,
+          paymentId,
+          kitPickupRequestId,
+          amount: stripeAmountToDecimalString(amountTotal),
+          currency: (session.currency ?? "brl").toUpperCase(),
+        },
       };
     }
 
@@ -129,17 +134,20 @@ export class StripePaymentGateway implements PaymentGateway {
       const paymentId = session.metadata?.paymentId ?? "";
       const kitPickupRequestId = session.metadata?.kitPickupRequestId ?? "";
       if (!paymentId || !kitPickupRequestId || !session.id) {
-        return null;
+        return { providerEventId, event: null };
       }
       return {
-        type: "payment.failed",
-        provider: this.provider,
-        providerPaymentId: session.id,
-        paymentId,
-        kitPickupRequestId,
+        providerEventId,
+        event: {
+          type: "payment.failed",
+          provider: this.provider,
+          providerPaymentId: session.id,
+          paymentId,
+          kitPickupRequestId,
+        },
       };
     }
 
-    return null;
+    return { providerEventId, event: null };
   }
 }

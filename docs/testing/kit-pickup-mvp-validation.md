@@ -83,7 +83,7 @@ This pattern matches robust API design: retries and duplicate clicks do not fail
 |----------|--------|
 | Start payment (`POST /payment`) | 200 + `checkoutUrl` |
 | Mock checkout → webhook | `PICKUP_PENDING` / `PAID` |
-| Duplicate webhook | 200 idempotent, no state/timestamp change |
+| Duplicate webhook | 200 idempotent via ledger `(provider, event_id)`; no domain re-apply |
 | Repeat `POST /payment` after PAID | 409 `INVALID_STATUS` |
 | Payment records | Single row per request, no duplicates |
 

@@ -4,6 +4,7 @@ import {
   KitPickupPaymentRecordStatus,
   KitPickupPaymentStatus,
   KitPickupRequestStatus,
+  PaymentWebhookEventStatus,
   Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -191,6 +192,70 @@ export class PaymentsService {
         "Não foi possível iniciar o pagamento.",
       );
     }
+  }
+
+  /**
+   * FASE 3.4-C1/C2 — ledger + short-circuit by (provider, eventId).
+   * Duplicate processed deliveries return without re-running domain writes.
+   */
+  async processVerifiedWebhook(params: {
+    providerEventId: string;
+    event: VerifiedPaymentEvent | null;
+    payloadHash: string | null;
+  }): Promise<"duplicate" | "applied"> {
+    const provider = this.gateway.provider;
+    const eventId = params.providerEventId;
+
+    const existing = await this.prisma.paymentWebhookEvent.findUnique({
+      where: { provider_eventId: { provider, eventId } },
+    });
+
+    if (existing?.processedAt != null) {
+      return "duplicate";
+    }
+
+    if (!existing) {
+      try {
+        await this.prisma.paymentWebhookEvent.create({
+          data: {
+            id: `pwe_${randomUUID().replace(/-/g, "")}`,
+            provider,
+            eventId,
+            status: PaymentWebhookEventStatus.RECEIVED,
+            payloadHash: params.payloadHash,
+          },
+        });
+      } catch (error: unknown) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          const raced = await this.prisma.paymentWebhookEvent.findUnique({
+            where: { provider_eventId: { provider, eventId } },
+          });
+          if (raced?.processedAt != null) {
+            return "duplicate";
+          }
+          // RECEIVED but not processed — allow domain retry after a crash.
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    if (params.event) {
+      await this.handleVerifiedEvent(params.event);
+    }
+
+    await this.prisma.paymentWebhookEvent.update({
+      where: { provider_eventId: { provider, eventId } },
+      data: {
+        status: PaymentWebhookEventStatus.PROCESSED,
+        processedAt: new Date(),
+      },
+    });
+
+    return "applied";
   }
 
   async handleVerifiedEvent(event: VerifiedPaymentEvent): Promise<void> {

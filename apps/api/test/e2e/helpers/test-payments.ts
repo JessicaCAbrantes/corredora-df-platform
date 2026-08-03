@@ -13,12 +13,18 @@ export function signMockPaidWebhook(
     kitPickupRequestId: string;
     amount: string;
     currency: string;
+    eventId?: string;
   },
   webhookSecret: string,
 ): { body: string; signature: string } {
   const body = JSON.stringify({
     type: "payment.paid",
-    ...payload,
+    ...(payload.eventId ? { eventId: payload.eventId } : {}),
+    paymentId: payload.paymentId,
+    providerPaymentId: payload.providerPaymentId,
+    kitPickupRequestId: payload.kitPickupRequestId,
+    amount: payload.amount,
+    currency: payload.currency,
   });
   const signature = createHmac("sha256", webhookSecret)
     .update(body, "utf8")

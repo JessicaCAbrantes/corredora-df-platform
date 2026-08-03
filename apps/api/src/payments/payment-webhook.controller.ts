@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   Controller,
   Get,
@@ -34,6 +35,7 @@ export class PaymentWebhookController {
 
   /**
    * Gateway webhook — authenticated by provider signature, not user session.
+   * Idempotency: UNIQUE(provider, event_id) ledger short-circuit (FASE 3.4-C1/C2).
    */
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
@@ -45,11 +47,12 @@ export class PaymentWebhookController {
     const gateway = this.paymentsService.getGateway();
     const signature =
       gateway.provider === "stripe" ? stripeSignature : mockSignature;
+    const rawBody = getRawBody(request);
 
-    let event;
+    let parsed;
     try {
-      event = await gateway.verifyAndParseWebhook({
-        rawBody: getRawBody(request),
+      parsed = await gateway.verifyAndParseWebhook({
+        rawBody,
         signatureHeader: signature,
       });
     } catch (error: unknown) {
@@ -69,12 +72,14 @@ export class PaymentWebhookController {
       );
     }
 
-    if (!event) {
-      return { received: true };
-    }
+    const payloadHash = createHash("sha256").update(rawBody).digest("hex");
 
     try {
-      await this.paymentsService.handleVerifiedEvent(event);
+      await this.paymentsService.processVerifiedWebhook({
+        providerEventId: parsed.providerEventId,
+        event: parsed.event,
+        payloadHash,
+      });
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
