@@ -10,8 +10,51 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import type { PaymentGateway, VerifiedPaymentEvent } from "./payment-gateway";
 
+/** Partial unique index from migration 20260803160000. */
+export const KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX =
+  "kit_pickup_payments_pending_request_uidx";
+
 function decimalEquals(a: Prisma.Decimal, b: string): boolean {
   return a.equals(new Prisma.Decimal(b));
+}
+
+/**
+ * Current checkout session for this payment row.
+ * Placeholder `pending_*` ids may still be bound by the first real session.
+ */
+export function isCurrentProviderSession(
+  currentProviderPaymentId: string,
+  eventProviderPaymentId: string,
+): boolean {
+  if (currentProviderPaymentId === eventProviderPaymentId) {
+    return true;
+  }
+  return currentProviderPaymentId.startsWith("pending_");
+}
+
+export function isPendingRequestUniqueConflict(error: unknown): boolean {
+  if (
+    !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+    error.code !== "P2002"
+  ) {
+    return false;
+  }
+  const meta = error.meta as
+    | { target?: string | string[]; constraint?: string }
+    | undefined;
+  const constraint = meta?.constraint;
+  if (constraint === KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX) {
+    return true;
+  }
+  const target = meta?.target;
+  if (typeof target === "string") {
+    return target === KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX;
+  }
+  if (Array.isArray(target)) {
+    return target.includes(KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX);
+  }
+  // Fallback: Postgres often embeds the index name in the message.
+  return error.message.includes(KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX);
 }
 
 @Injectable()
@@ -99,54 +142,56 @@ export class PaymentsService {
 
     const existingPending = request.payments[0];
     if (existingPending) {
-      // Reuse pending payment — create a fresh checkout session on the same payment row.
-      const checkout = await this.gateway.createCheckout({
-        paymentId: existingPending.id,
-        kitPickupRequestId: request.id,
+      return this.checkoutWithExistingPending({
+        pending: existingPending,
+        requestId: request.id,
+        requestStatus: request.status,
         amount,
         currency,
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
       });
-
-      await this.prisma.kitPickupPayment.update({
-        where: { id: existingPending.id },
-        data: {
-          provider: checkout.provider,
-          providerPaymentId: checkout.providerPaymentId,
-        },
-      });
-
-      if (request.status !== KitPickupRequestStatus.PAYMENT_PENDING) {
-        await this.prisma.kitPickupRequest.update({
-          where: { id: request.id },
-          data: {
-            status: KitPickupRequestStatus.PAYMENT_PENDING,
-            paymentStatus: KitPickupPaymentStatus.PENDING,
-          },
-        });
-      }
-
-      return {
-        checkoutUrl: checkout.checkoutUrl,
-        paymentId: existingPending.id,
-        provider: checkout.provider,
-      };
     }
 
     const paymentId = `kpp_${randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    await this.prisma.kitPickupPayment.create({
-      data: {
-        id: paymentId,
-        kitPickupRequestId: request.id,
-        provider: this.gateway.provider,
-        providerPaymentId: `pending_${paymentId}`,
-        amount: request.feeAmountSnapshot,
-        currency,
-        status: KitPickupPaymentRecordStatus.PENDING,
-      },
-    });
+    try {
+      await this.prisma.kitPickupPayment.create({
+        data: {
+          id: paymentId,
+          kitPickupRequestId: request.id,
+          provider: this.gateway.provider,
+          providerPaymentId: `pending_${paymentId}`,
+          amount: request.feeAmountSnapshot,
+          currency,
+          status: KitPickupPaymentRecordStatus.PENDING,
+        },
+      });
+    } catch (error: unknown) {
+      if (isPendingRequestUniqueConflict(error)) {
+        const racedPending = await this.prisma.kitPickupPayment.findFirst({
+          where: {
+            kitPickupRequestId: request.id,
+            status: KitPickupPaymentRecordStatus.PENDING,
+          },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!racedPending) {
+          throw error;
+        }
+        return this.checkoutWithExistingPending({
+          pending: racedPending,
+          requestId: request.id,
+          requestStatus: request.status,
+          amount,
+          currency,
+          successUrl: params.successUrl,
+          cancelUrl: params.cancelUrl,
+          customerEmail: params.customerEmail,
+        });
+      }
+      throw error;
+    }
 
     try {
       const checkout = await this.gateway.createCheckout({
@@ -192,6 +237,51 @@ export class PaymentsService {
         "Não foi possível iniciar o pagamento.",
       );
     }
+  }
+
+  private async checkoutWithExistingPending(params: {
+    pending: { id: string };
+    requestId: string;
+    requestStatus: KitPickupRequestStatus;
+    amount: string;
+    currency: string;
+    successUrl: string;
+    cancelUrl: string;
+    customerEmail?: string;
+  }): Promise<{ checkoutUrl: string; paymentId: string; provider: string }> {
+    const checkout = await this.gateway.createCheckout({
+      paymentId: params.pending.id,
+      kitPickupRequestId: params.requestId,
+      amount: params.amount,
+      currency: params.currency,
+      successUrl: params.successUrl,
+      cancelUrl: params.cancelUrl,
+      customerEmail: params.customerEmail,
+    });
+
+    await this.prisma.kitPickupPayment.update({
+      where: { id: params.pending.id },
+      data: {
+        provider: checkout.provider,
+        providerPaymentId: checkout.providerPaymentId,
+      },
+    });
+
+    if (params.requestStatus !== KitPickupRequestStatus.PAYMENT_PENDING) {
+      await this.prisma.kitPickupRequest.update({
+        where: { id: params.requestId },
+        data: {
+          status: KitPickupRequestStatus.PAYMENT_PENDING,
+          paymentStatus: KitPickupPaymentStatus.PENDING,
+        },
+      });
+    }
+
+    return {
+      checkoutUrl: checkout.checkoutUrl,
+      paymentId: params.pending.id,
+      provider: checkout.provider,
+    };
   }
 
   /**
@@ -300,6 +390,11 @@ export class PaymentsService {
     },
     event: Extract<VerifiedPaymentEvent, { type: "payment.paid" }>,
   ): Promise<void> {
+    // FASE 3.4-C3-B: stale checkout — no domain write; caller still marks ledger PROCESSED.
+    if (!isCurrentProviderSession(payment.providerPaymentId, event.providerPaymentId)) {
+      return;
+    }
+
     if (payment.id !== event.paymentId) {
       throw this.error(
         HttpStatus.CONFLICT,
@@ -353,23 +448,67 @@ export class PaymentsService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.kitPickupPayment.update({
-        where: { id: payment.id },
+    // FASE 3.4-C3-A: conditional transitions (PENDING|FAILED → PAID). Never clobber CANCELLED.
+    await this.prisma.$transaction(async (tx) => {
+      const paymentUpdate = await tx.kitPickupPayment.updateMany({
+        where: {
+          id: payment.id,
+          status: {
+            in: [
+              KitPickupPaymentRecordStatus.PENDING,
+              KitPickupPaymentRecordStatus.FAILED,
+            ],
+          },
+        },
         data: {
           status: KitPickupPaymentRecordStatus.PAID,
           providerPaymentId: event.providerPaymentId,
         },
-      }),
-      this.prisma.kitPickupRequest.update({
-        where: { id: payment.kitPickupRequestId },
+      });
+
+      if (paymentUpdate.count === 0) {
+        // Crash recovery: payment already PAID but request may still be PAYMENT_PENDING.
+        const current = await tx.kitPickupPayment.findUnique({
+          where: { id: payment.id },
+        });
+        if (current?.status === KitPickupPaymentRecordStatus.PAID) {
+          await tx.kitPickupRequest.updateMany({
+            where: {
+              id: payment.kitPickupRequestId,
+              status: {
+                in: [
+                  KitPickupRequestStatus.PAYMENT_PENDING,
+                  KitPickupRequestStatus.TERM_ACCEPTED,
+                  KitPickupRequestStatus.PAID,
+                ],
+              },
+            },
+            data: {
+              status: KitPickupRequestStatus.PICKUP_PENDING,
+              paymentStatus: KitPickupPaymentStatus.PAID,
+            },
+          });
+        }
+        return;
+      }
+
+      await tx.kitPickupRequest.updateMany({
+        where: {
+          id: payment.kitPickupRequestId,
+          status: {
+            in: [
+              KitPickupRequestStatus.PAYMENT_PENDING,
+              KitPickupRequestStatus.TERM_ACCEPTED,
+              KitPickupRequestStatus.PAID,
+            ],
+          },
+        },
         data: {
-          // Auto-enter operational queue after gateway confirmation.
           status: KitPickupRequestStatus.PICKUP_PENDING,
           paymentStatus: KitPickupPaymentStatus.PAID,
         },
-      }),
-    ]);
+      });
+    });
   }
 
   private async markFailed(
@@ -387,6 +526,11 @@ export class PaymentsService {
       return;
     }
 
+    // FASE 3.4-C3-B: stale checkout — ignore domain.
+    if (!isCurrentProviderSession(payment.providerPaymentId, event.providerPaymentId)) {
+      return;
+    }
+
     if (payment.status === KitPickupPaymentRecordStatus.PAID) {
       return;
     }
@@ -399,16 +543,28 @@ export class PaymentsService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.kitPickupPayment.update({
-        where: { id: payment.id },
+    // FASE 3.4-C3-A: FAILED only from PENDING — never overwrite PAID.
+    await this.prisma.$transaction(async (tx) => {
+      const paymentUpdate = await tx.kitPickupPayment.updateMany({
+        where: {
+          id: payment.id,
+          status: KitPickupPaymentRecordStatus.PENDING,
+        },
         data: { status: KitPickupPaymentRecordStatus.FAILED },
-      }),
-      this.prisma.kitPickupRequest.update({
-        where: { id: payment.kitPickupRequestId },
+      });
+
+      if (paymentUpdate.count === 0) {
+        return;
+      }
+
+      await tx.kitPickupRequest.updateMany({
+        where: {
+          id: payment.kitPickupRequestId,
+          paymentStatus: KitPickupPaymentStatus.PENDING,
+        },
         data: { paymentStatus: KitPickupPaymentStatus.FAILED },
-      }),
-    ]);
+      });
+    });
   }
 
   private notFound(): HttpException {

@@ -35,6 +35,7 @@ Documentação do banco de dados da plataforma Corredora DF.
 | FKs de domínio / auditoria para `User` | `onDelete: Restrict`, `onUpdate: Cascade` |
 | Soft delete | não implementado (MVP) |
 | Webhook ledger | `payment_webhook_events` — UNIQUE(`provider`, `event_id`) (FASE 3.4-C1/C2) |
+| One PENDING payment / request | partial unique `kit_pickup_payments_pending_request_uidx` (FASE 3.4-C3) — SQL only; do not DROP |
 
 ## Partial unique — Active Kit Pickup (decisão consciente)
 
@@ -51,6 +52,16 @@ WHERE "status" <> 'CANCELLED';
 Linhas `CANCELLED` podem ser recriadas. O app também trata `P2002` / `ACTIVE_REQUEST_EXISTS`.
 
 Este “drift” Prisma × Postgres é **intencional** (FASE 3.3-B). Comentários equivalentes estão no model `KitPickupRequest`.
+
+## Partial unique — One PENDING payment (FASE 3.4-C3)
+
+```sql
+CREATE UNIQUE INDEX "kit_pickup_payments_pending_request_uidx"
+ON "kit_pickup_payments" ("kit_pickup_request_id")
+WHERE "status" = 'PENDING';
+```
+
+Create-checkout trata `P2002` **somente** quando a constraint é essa; outros únicos (ex.: `provider_payment_id`) não são mascarados.
 
 ### Checklist de review de migrations
 

@@ -96,7 +96,16 @@ POST /payments/webhook
 
 Idempotência primária = ledger por `event.id`. Soft-idempotência por estado do pagamento permanece como defesa em profundidade.
 
-**Fora deste PR:** locks/concorrência (3.4-C3), contrato HTTP permanente→2xx (3.4-C4).
+### Concorrência (FASE 3.4-C3)
+
+| Garantia | Como |
+|---|---|
+| FAILED não sobrescreve PAID | `updateMany` com `WHERE status = PENDING` |
+| PAID após FAILED | permitido (`PENDING\|FAILED` → `PAID`) — semântica existente |
+| Checkout stale | `providerPaymentId` ≠ sessão atual → no-op de domínio; ledger ainda `PROCESSED` |
+| Um PENDING por request | partial unique `kit_pickup_payments_pending_request_uidx`; P2002 → reuse |
+
+**Fora deste PR:** contrato HTTP permanente→2xx (3.4-C4).
 
 ## Gateway
 

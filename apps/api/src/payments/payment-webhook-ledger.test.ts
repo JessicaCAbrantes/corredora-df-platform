@@ -37,7 +37,7 @@ function createPrismaMock(params: {
 }) {
   const { request, payment, ledger, domainApplyCount } = params;
 
-  return {
+  const prisma = {
     kitPickupPayment: {
       findUnique: async ({
         where,
@@ -69,6 +69,30 @@ function createPrismaMock(params: {
         domainApplyCount.value += 1;
         return payment;
       },
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: {
+          id: string;
+          status?:
+            | KitPickupPaymentRecordStatus
+            | { in: KitPickupPaymentRecordStatus[] };
+        };
+        data: Partial<KitPickupPayment>;
+      }) => {
+        if (where.id !== payment.id) return { count: 0 };
+        const allowed =
+          where.status == null
+            ? true
+            : typeof where.status === "object" && "in" in where.status
+              ? where.status.in.includes(payment.status)
+              : payment.status === where.status;
+        if (!allowed) return { count: 0 };
+        Object.assign(payment, data, { updatedAt: new Date() });
+        domainApplyCount.value += 1;
+        return { count: 1 };
+      },
     },
     kitPickupRequest: {
       update: async ({
@@ -83,6 +107,34 @@ function createPrismaMock(params: {
         }
         Object.assign(request, data, { updatedAt: new Date() });
         return request;
+      },
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: {
+          id: string;
+          status?: KitPickupRequestStatus | { in: KitPickupRequestStatus[] };
+          paymentStatus?: KitPickupPaymentStatus;
+        };
+        data: Partial<KitPickupRequest>;
+      }) => {
+        if (where.id !== request.id) return { count: 0 };
+        if (
+          where.paymentStatus != null &&
+          request.paymentStatus !== where.paymentStatus
+        ) {
+          return { count: 0 };
+        }
+        const statusOk =
+          where.status == null
+            ? true
+            : typeof where.status === "object" && "in" in where.status
+              ? where.status.in.includes(request.status)
+              : request.status === where.status;
+        if (!statusOk) return { count: 0 };
+        Object.assign(request, data, { updatedAt: new Date() });
+        return { count: 1 };
       },
     },
     paymentWebhookEvent: {
@@ -149,13 +201,17 @@ function createPrismaMock(params: {
         return row;
       },
     },
-    $transaction: async (ops: Promise<unknown>[] | (() => Promise<unknown>)) => {
+    $transaction: async (
+      ops: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>),
+    ) => {
       if (typeof ops === "function") {
-        return ops();
+        return ops(prisma);
       }
       return Promise.all(ops);
     },
   };
+
+  return prisma;
 }
 
 async function run(): Promise<void> {
