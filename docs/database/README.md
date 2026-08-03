@@ -17,13 +17,14 @@ Documentação do banco de dados da plataforma Corredora DF.
 - **Prisma** — ORM + migrations em `apps/api/prisma`
 - **Docker Compose** — Postgres de desenvolvimento (porta host **5433**)
 
-## Operational docs (FASE 3.3-C)
+## Operational docs
 
 | Doc | Conteúdo |
 |---|---|
-| [seeding.md](./seeding.md) | Política de seed, fail-closed em production, `ALLOW_DB_SEED` |
-| [backup.md](./backup.md) | `pg_dump` / restore + backups gerenciados |
-| [checklist.md](./checklist.md) | Checklist pré/pós deploy e review de migrations |
+| [seeding.md](./seeding.md) | Política de seed, fail-closed em production, `ALLOW_DB_SEED` (3.3-C) |
+| [backup.md](./backup.md) | `pg_dump` / restore + backups gerenciados (3.3-C) |
+| [checklist.md](./checklist.md) | Checklist pré/pós deploy e review de migrations (3.3-C) |
+| [fase-3.3-d-deferred.md](./fase-3.3-d-deferred.md) | 3.3-D: CHECKs/índices **deferred** (decisão consciente) |
 
 ## Convenções
 
@@ -63,7 +64,18 @@ Ver [checklist.md](./checklist.md). Em resumo: **não** `DROP` o índice parcial
 | `kit_pickup_requests` | `picked_up_by`, `custody_by`, `ready_by`, `delivered_by` | Restrict |
 | `pickup_term_acceptances` | `accepted_by_user_id` | Restrict |
 
+## FASE 3.3 status
+
+| Sprint | Status |
+|---|---|
+| 3.3-A User Foreign Keys | Done |
+| 3.3-B Audit FKs + partial unique docs | Done |
+| 3.3-C Seed policy + backup/checklist | Done |
+| 3.3-D CHECKs + indexes | **Deferred** — see [fase-3.3-d-deferred.md](./fase-3.3-d-deferred.md) |
+
 ## Roadmap
 
-- CHECK constraints / índices extras → **FASE 3.3-D**
 - Payments hardening → **FASE 3.4**
+- Observability → **FASE 3.5**
+- Containers → **FASE 3.6**
+- Deploy / CD → **FASE 3.7 / 3.8**
