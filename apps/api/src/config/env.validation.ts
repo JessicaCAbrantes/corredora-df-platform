@@ -13,7 +13,7 @@ export type Env = {
   PUBLIC_API_BASE_URL: string;
   PAYMENT_SUCCESS_URL: string;
   PAYMENT_CANCEL_URL: string;
-  /** Required when PAYMENT_PROVIDER=mock */
+  /** Set when PAYMENT_PROVIDER=mock (explicit or derived from AUTH_SECRET) */
   PAYMENT_WEBHOOK_SECRET: string | null;
   /** Required when PAYMENT_PROVIDER=stripe */
   STRIPE_SECRET_KEY: string | null;
@@ -48,6 +48,7 @@ function defaultWebhookSecretForMock(authSecret: string): string {
 
 /**
  * Minimal env validation for Backend Foundation + Auth + Payments MVP.
+ * FASE 3.4-B: fail-closed payment configuration (especially production).
  */
 export function validateEnv(config: Record<string, unknown>): Env {
   const portRaw = config.PORT ?? "3001";
@@ -86,21 +87,47 @@ export function validateEnv(config: Record<string, unknown>): Env {
     "PAYMENT_CANCEL_URL",
   );
 
-  let stripeSecretKey: string | null = optionalString(config.STRIPE_SECRET_KEY);
-  let stripeWebhookSecret: string | null = optionalString(
+  const stripeSecretKey: string | null = optionalString(config.STRIPE_SECRET_KEY);
+  const stripeWebhookSecret: string | null = optionalString(
     config.STRIPE_WEBHOOK_SECRET,
   );
   let paymentWebhookSecret: string | null = optionalString(
     config.PAYMENT_WEBHOOK_SECRET,
   );
 
-  if (paymentProvider === "stripe") {
-    stripeSecretKey = requireString(config.STRIPE_SECRET_KEY, "STRIPE_SECRET_KEY");
-    stripeWebhookSecret = requireString(
-      config.STRIPE_WEBHOOK_SECRET,
-      "STRIPE_WEBHOOK_SECRET",
+  // --- FASE 3.4-B: payment provider fail-closed / consistency ---
+  if (nodeEnv === "production" && paymentProvider === "mock") {
+    throw new Error(
+      [
+        "PAYMENT_PROVIDER=mock is not allowed when NODE_ENV=production.",
+        "Set PAYMENT_PROVIDER=stripe and provide STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET.",
+      ].join(" "),
     );
+  }
+
+  if (paymentProvider === "stripe") {
+    if (stripeSecretKey == null) {
+      throw new Error(
+        "Missing or invalid environment variable: STRIPE_SECRET_KEY (required when PAYMENT_PROVIDER=stripe)",
+      );
+    }
+    if (stripeWebhookSecret == null) {
+      throw new Error(
+        "Missing or invalid environment variable: STRIPE_WEBHOOK_SECRET (required when PAYMENT_PROVIDER=stripe)",
+      );
+    }
   } else {
+    // mock: Stripe keys must not be set (ambiguous / inconsistent config)
+    if (stripeSecretKey != null || stripeWebhookSecret != null) {
+      throw new Error(
+        [
+          "Inconsistent payment configuration: PAYMENT_PROVIDER=mock but Stripe secrets are set",
+          "(STRIPE_SECRET_KEY and/or STRIPE_WEBHOOK_SECRET).",
+          "Remove the Stripe secrets or set PAYMENT_PROVIDER=stripe.",
+        ].join(" "),
+      );
+    }
+    // Local/CI: allow derived HMAC secret; optional explicit PAYMENT_WEBHOOK_SECRET.
     paymentWebhookSecret =
       paymentWebhookSecret ?? defaultWebhookSecretForMock(authSecret);
   }

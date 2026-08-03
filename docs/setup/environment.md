@@ -2,7 +2,7 @@
 
 Reference for all environment variables used by the Corredora DF Platform (API, Web, local Docker, and CI).
 
-> **Scope (FASE 2.2):** inventory + secrets strategy for Production Readiness. Runtime rules such as rejecting `PAYMENT_PROVIDER=mock` in production are tracked as future hardening (not yet enforced).
+> **Scope:** FASE 2.2 inventory + secrets strategy. **FASE 3.4-B** enforces payment fail-closed at API bootstrap (`validateEnv`) — see [Payment configuration (fail-closed)](#payment-configuration-fail-closed-fase-34-b).
 
 ## Quick start (local)
 
@@ -62,7 +62,7 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 | `DATABASE_URL` | SECRET | **Yes** | — | Prisma/Postgres connection string | Boot / Prisma fail |
 | `CORS_ORIGIN` | INTERNAL | No | `http://localhost:3000` | Allowed browser origin | Default localhost web |
 | `AUTH_SECRET` | SECRET | **Yes** | — | HMAC for `corredora_session` cookie | Boot fails |
-| `PAYMENT_PROVIDER` | INTERNAL | No | `mock` | `mock` \| `stripe` | Uses mock gateway |
+| `PAYMENT_PROVIDER` | INTERNAL | No* | `mock` | `mock` \| `stripe` (*`mock` forbidden if `NODE_ENV=production`) | Default mock; production+mock fails boot |
 | `PUBLIC_API_BASE_URL` | INTERNAL | No | `http://localhost:${PORT}` | Public API origin (mock checkout links) | Localhost default |
 | `PAYMENT_SUCCESS_URL` | INTERNAL | No | `{CORS_ORIGIN}/kit-pickup-requests/payment/success` | Post-payment redirect (success) | Derived from CORS |
 | `PAYMENT_CANCEL_URL` | INTERNAL | No | `{CORS_ORIGIN}/kit-pickup-requests/payment/cancel` | Post-payment redirect (cancel) | Derived from CORS |
@@ -80,6 +80,29 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 - Auth seed credentials and secret generation: [`apps/api/src/auth/README.md`](../../apps/api/src/auth/README.md).
 - **Database seed:** local/CI only. Production is fail-closed unless `ALLOW_DB_SEED=true` — see [`docs/database/seeding.md`](../database/seeding.md).
 - `ALLOW_DB_SEED` — INTERNAL, optional, **seed script only** (not validated at Nest boot). Never set in normal production deploys.
+
+### Payment configuration (fail-closed — FASE 3.4-B)
+
+Validated in [`apps/api/src/config/env.validation.ts`](../../apps/api/src/config/env.validation.ts) at Nest bootstrap. Invalid combinations **throw before the app listens**.
+
+| Rule | Result |
+|---|---|
+| `NODE_ENV=production` and `PAYMENT_PROVIDER=mock` (or default `mock`) | Boot fails |
+| `PAYMENT_PROVIDER=stripe` without `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` (missing or blank) | Boot fails |
+| `PAYMENT_PROVIDER=mock` with `STRIPE_SECRET_KEY` and/or `STRIPE_WEBHOOK_SECRET` set | Boot fails (ambiguous config) |
+| `PAYMENT_PROVIDER=mock` in `development` / `test` | Allowed; `PAYMENT_WEBHOOK_SECRET` optional (derived from `AUTH_SECRET` if omitted) |
+| `PAYMENT_PROVIDER=stripe` with both Stripe secrets | Allowed in any `NODE_ENV` |
+
+**Environment matrix**
+
+| Environment | `NODE_ENV` | `PAYMENT_PROVIDER` | Stripe secrets | Notes |
+|---|---|---|---|---|
+| Local | `development` | `mock` (default) | Must be unset | Use `.env` from API `.env.example` |
+| CI Integration | `test` | `mock` | Must be unset | Fixtures in workflow YAML |
+| Staging (planned) | `production` (or staging equivalent treated as prod) | `stripe` | Required | No mock |
+| Production | `production` | `stripe` | Required | No mock |
+
+Idempotency, webhook ledger, and payment ops runbooks are **out of scope** for 3.4-B (see 3.4-C / 3.4-D).
 
 ---
 
@@ -169,9 +192,9 @@ These must come from the runtime / secret store — **never** from CI fixtures o
 |---|---|
 | `DATABASE_URL` | Strong credentials; managed DB |
 | `AUTH_SECRET` | Long random; rotate independently of CI |
-| `PAYMENT_WEBHOOK_SECRET` | **Explicit** in production (do not rely on AUTH_SECRET derivation) |
-| `STRIPE_SECRET_KEY` | When `PAYMENT_PROVIDER=stripe` |
-| `STRIPE_WEBHOOK_SECRET` | When `PAYMENT_PROVIDER=stripe` |
+| `STRIPE_SECRET_KEY` | Required when `PAYMENT_PROVIDER=stripe` (production/staging) |
+| `STRIPE_WEBHOOK_SECRET` | Required when `PAYMENT_PROVIDER=stripe` (production/staging) |
+| `PAYMENT_WEBHOOK_SECRET` | Only for `mock` (local/CI); optional — derived from `AUTH_SECRET` if omitted. Not used with Stripe. |
 
 ### Public build variables
 
@@ -187,7 +210,7 @@ These must come from the runtime / secret store — **never** from CI fixtures o
 | `PUBLIC_API_BASE_URL` | Public API origin (e.g. mock checkout links) |
 | `PAYMENT_SUCCESS_URL` | Post-payment redirect |
 | `PAYMENT_CANCEL_URL` | Cancel redirect |
-| `PAYMENT_PROVIDER` | `mock` locally/CI; production should use an approved provider (e.g. `stripe`) — runtime fail-closed for mock-in-production is future hardening |
+| `PAYMENT_PROVIDER` | `mock` locally/CI only; production/staging must use `stripe` (enforced at API bootstrap — FASE 3.4-B) |
 | `KIT_PICKUP_OPERATOR_USER_IDS` | MVP allowlist (not a credential; manage as config) |
 
 ### Rules
@@ -216,9 +239,11 @@ These must come from the runtime / secret store — **never** from CI fixtures o
 
 No staging/production env manifests live in the repo yet. When deploying:
 
-**Runtime secrets:** `DATABASE_URL`, `AUTH_SECRET`, `PAYMENT_WEBHOOK_SECRET`, and Stripe keys when applicable.
+**Required for payments (FASE 3.4-B):** `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. `PAYMENT_PROVIDER=mock` will refuse to boot when `NODE_ENV=production`.
 
-**Configuration:** `CORS_ORIGIN`, `PUBLIC_API_BASE_URL`, payment URLs, `PAYMENT_PROVIDER`, `KIT_PICKUP_OPERATOR_USER_IDS`, `PORT`.
+**Runtime secrets:** `DATABASE_URL`, `AUTH_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+
+**Configuration:** `CORS_ORIGIN`, `PUBLIC_API_BASE_URL`, payment URLs, `PAYMENT_PROVIDER=stripe`, `KIT_PICKUP_OPERATOR_USER_IDS`, `PORT`.
 
 **Web (build-time):** `NEXT_PUBLIC_API_URL` pointing at the public API origin.
 

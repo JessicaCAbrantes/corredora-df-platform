@@ -78,8 +78,8 @@ Campos **nunca** expostos ao participante: `pickedUpBy`, `custodyBy`, `readyBy`,
 
 | `PAYMENT_PROVIDER` | Uso |
 |---|---|
-| `mock` (default local/CI) | Checkout HTML + HMAC `X-Corredora-Payment-Signature` |
-| `stripe` | Stripe Checkout Session + `Stripe-Signature` |
+| `mock` (default local/CI) | Checkout HTML + HMAC `X-Corredora-Payment-Signature`. **Forbidden** when `NODE_ENV=production` (boot fails — FASE 3.4-B). |
+| `stripe` | Stripe Checkout Session + `Stripe-Signature`. Requires `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`. |
 
 Variáveis relacionadas (`PAYMENT_*`, `STRIPE_*`, `PUBLIC_API_BASE_URL`): [setup/environment.md](../setup/environment.md).
 
