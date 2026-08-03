@@ -133,6 +133,19 @@ enum KitPickupPaymentRecordStatus {
 }
 
 /// Authenticated intent to use a KitPickupService (Phase 2).
+///
+/// IMPORTANT
+///
+/// PostgreSQL contains a partial unique index enforcing one ACTIVE request
+/// per (userId, serviceId). Prisma cannot model partial unique indexes.
+///
+///   CREATE UNIQUE INDEX "kit_pickup_requests_active_user_service_uidx"
+///   ON "kit_pickup_requests" ("user_id", "kit_pickup_service_id")
+///   WHERE "status" <> 'CANCELLED';
+///
+/// Do NOT add @@unique([userId, kitPickupServiceId]) and do NOT DROP this
+/// index in future migrations. See migration 20260728010000 and
+/// docs/database/README.md (FASE 3.3-B architectural decision).
 model KitPickupRequest {
   id                  String                 @id @default(cuid())
   userId              String                 @map("user_id")
@@ -155,7 +168,11 @@ model KitPickupRequest {
   createdAt           DateTime               @default(now()) @map("created_at")
   updatedAt           DateTime               @updatedAt @map("updated_at")
 
-  user             User                  @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user             User                  @relation("KitPickupRequestOwner", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pickedUpByUser   User?                 @relation("KitPickupPickedUpBy", fields: [pickedUpBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  custodyByUser    User?                 @relation("KitPickupCustodyBy", fields: [custodyBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  readyByUser      User?                 @relation("KitPickupReadyBy", fields: [readyBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deliveredByUser  User?                 @relation("KitPickupDeliveredBy", fields: [deliveredBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
   kitPickupService KitPickupService      @relation(fields: [kitPickupServiceId], references: [id], onDelete: Cascade)
   registration     EventRegistration?    @relation(fields: [registrationId], references: [id], onDelete: SetNull)
   participant      ParticipantSnapshot?
@@ -197,7 +214,8 @@ model PickupTermAcceptance {
   acceptedAt         DateTime @default(now()) @map("accepted_at")
   acceptedByUserId   String   @map("accepted_by_user_id")
 
-  request KitPickupRequest @relation(fields: [kitPickupRequestId], references: [id], onDelete: Cascade)
+  request          KitPickupRequest @relation(fields: [kitPickupRequestId], references: [id], onDelete: Cascade)
+  acceptedByUser   User             @relation("PickupTermAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@map("pickup_term_acceptances")
 }
@@ -244,8 +262,13 @@ model User {
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  registrations     EventRegistration[]
-  kitPickupRequests KitPickupRequest[]
+  registrations              EventRegistration[]
+  kitPickupRequests          KitPickupRequest[]       @relation("KitPickupRequestOwner")
+  kitPickupPickedUp          KitPickupRequest[]       @relation("KitPickupPickedUpBy")
+  kitPickupCustody           KitPickupRequest[]       @relation("KitPickupCustodyBy")
+  kitPickupReady             KitPickupRequest[]       @relation("KitPickupReadyBy")
+  kitPickupDelivered         KitPickupRequest[]       @relation("KitPickupDeliveredBy")
+  pickupTermAcceptances      PickupTermAcceptance[]   @relation("PickupTermAcceptedBy")
 
   @@map("users")
 }

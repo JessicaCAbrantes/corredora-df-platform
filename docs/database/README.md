@@ -1,58 +1,65 @@
 # Database
 
-Documentação do banco de dados da plataforma.
+Documentação do banco de dados da plataforma Corredora DF.
 
-## Objetivo
+## Fonte da verdade
 
-Registrar modelagem de dados, schemas, migrations, convenções de nomenclatura e estratégias de persistência.
-
-## Escopo
-
-| Tópico | Local no repositório |
+| Artefato | Caminho |
 |---|---|
-| Schemas e migrations | `database/` (raiz) |
-| Contratos de API | [api/](../api/) |
-| Tipos compartilhados | `packages/types/` |
+| Schema Prisma | [`apps/api/prisma/schema.prisma`](../../apps/api/prisma/schema.prisma) |
+| Migrations | [`apps/api/prisma/migrations/`](../../apps/api/prisma/migrations/) |
+| Seed (local/CI) | [`apps/api/prisma/seed.ts`](../../apps/api/prisma/seed.ts) |
+| Postgres local | [`infrastructure/docker-compose.yml`](../../infrastructure/docker-compose.yml) |
 
-## Stack planejada
+## Stack
 
-- **PostgreSQL** — banco relacional principal
-- **Prisma** — ORM e gerenciamento de migrations
-- **Docker** — ambiente local de desenvolvimento
+- **PostgreSQL** — banco relacional (ADR-006)
+- **Prisma** — ORM + migrations em `apps/api/prisma`
+- **Docker Compose** — Postgres de desenvolvimento (porta host **5433**)
 
-## Convenções (planejadas)
+## Convenções
 
-| Elemento | Convenção | Exemplo |
-|---|---|---|
-| Tabelas | snake_case, plural | `events`, `user_profiles` |
-| Colunas | snake_case | `created_at`, `event_id` |
-| IDs | UUID ou prefixado | `evt_01HXYZ` |
-| Timestamps | `created_at`, `updated_at` | ISO 8601 UTC |
-| Soft delete | `deleted_at` | Nullable timestamp |
+| Elemento | Convenção |
+|---|---|
+| Tabelas | `snake_case`, plural (`@@map`) |
+| Colunas | `snake_case` (`@map`) |
+| FKs de domínio / auditoria para `User` | `onDelete: Restrict`, `onUpdate: Cascade` |
+| Soft delete | não implementado (MVP) |
 
-## Entidades principais (previstas)
+## Partial unique — Active Kit Pickup (decisão consciente)
 
-```text
-users ──┬── events (inscrições)
-        ├── coupons (resgates)
-        ├── community_posts
-        └── notifications
+Prisma **não** modela índices únicos parciais no `schema.prisma`.
 
-events ──┬── partners
-         ├── kits
-         └── registrations
+O índice abaixo existe **somente** no PostgreSQL (migration `20260728010000_kit_pickup_requests`) e é a garantia de “uma solicitação ativa por `(user, service)`”:
 
-partners ── coupons
-blog_posts
-ads
+```sql
+CREATE UNIQUE INDEX "kit_pickup_requests_active_user_service_uidx"
+ON "kit_pickup_requests" ("user_id", "kit_pickup_service_id")
+WHERE "status" <> 'CANCELLED';
 ```
 
-## Documentos futuros
+Linhas `CANCELLED` podem ser recriadas. O app também trata `P2002` / `ACTIVE_REQUEST_EXISTS`.
 
-- `schema.md` — diagrama ER
-- `migrations.md` — estratégia de migrations
-- `seeding.md` — dados de desenvolvimento
+Este “drift” Prisma × Postgres é **intencional** (FASE 3.3-B). Comentários equivalentes estão no model `KitPickupRequest` e no SQL da migration.
 
-## Estado atual
+### Checklist de review de migrations
 
-Pasta `database/` na raiz preparada. Nenhum schema implementado.
+Antes de aprovar qualquer migration futura:
+
+1. Verificar se o SQL **não** contém `DROP INDEX "kit_pickup_requests_active_user_service_uidx"`.
+2. Se `prisma migrate diff` sugerir remover esse índice, **rejeitar** a alteração salvo redesign explícito de produto.
+
+## Foreign keys para `User` (resumo)
+
+| Origem | Campo | `onDelete` |
+|---|---|---|
+| `event_registrations` | `user_id` | Restrict |
+| `kit_pickup_requests` | `user_id` | Restrict |
+| `kit_pickup_requests` | `picked_up_by`, `custody_by`, `ready_by`, `delivered_by` | Restrict |
+| `pickup_term_acceptances` | `accepted_by_user_id` | Restrict |
+
+## Documentos futuros (roadmap)
+
+- Backup / restore runbook → FASE 3.3-D / ops
+- Seeds fail-closed em production → FASE 3.3-C
+- CHECK constraints seletivos → sprint própria (após 3.3-B)
