@@ -35,6 +35,8 @@
 
 Password is never stored in plaintext — only `password_hash` in DB.
 
+**Local / CI only.** Production seed is fail-closed — see [`docs/database/seeding.md`](../../../../docs/database/seeding.md).
+
 ## Environment
 
 Full env reference: [`docs/setup/environment.md`](../../../../docs/setup/environment.md).

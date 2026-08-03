@@ -1,8 +1,13 @@
 import { PrismaClient, EventCategory, EventLifecycleStatus, EventRegistrationMode, EventRegistrationStatus } from "@prisma/client";
 import { hashPassword } from "../src/auth/password";
+import { assertSeedAllowed } from "./assert-seed-allowed";
 
 const prisma = new PrismaClient();
 
+/**
+ * Dev / CI fixtures only (FASE 3.3-C).
+ * Production is fail-closed unless ALLOW_DB_SEED=true — see docs/database/seeding.md.
+ */
 /** Dev-only Auth MVP credentials — never stored in plaintext in the DB. */
 const SEED_USER_EMAIL = "runner@corredora.df";
 const SEED_USER_PASSWORD = "corredora123";
@@ -438,6 +443,8 @@ async function seedKitPickupServices(): Promise<void> {
 }
 
 async function main() {
+  assertSeedAllowed();
+
   await seedAuthUser();
 
   for (const event of events) {

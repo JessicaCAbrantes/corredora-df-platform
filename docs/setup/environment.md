@@ -78,6 +78,8 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 - **`KIT_PICKUP_OPERATOR_USER_IDS`:** parsed in env validation and also read from `process.env` in the operator assert helper. Keep one comma-separated string in `.env`.
 - **Stripe:** set `PAYMENT_PROVIDER=stripe` and both Stripe secrets. Do not use live keys in local/CI.
 - Auth seed credentials and secret generation: [`apps/api/src/auth/README.md`](../../apps/api/src/auth/README.md).
+- **Database seed:** local/CI only. Production is fail-closed unless `ALLOW_DB_SEED=true` — see [`docs/database/seeding.md`](../database/seeding.md).
+- `ALLOW_DB_SEED` — INTERNAL, optional, **seed script only** (not validated at Nest boot). Never set in normal production deploys.
 
 ---
 
@@ -312,6 +314,9 @@ Prefer `/health/live` and `/health/ready` for orchestration.
 - [`apps/api/.env.example`](../../apps/api/.env.example)
 - [`apps/web/.env.example`](../../apps/web/.env.example)
 - [`apps/api/src/auth/README.md`](../../apps/api/src/auth/README.md) — `AUTH_SECRET` and seed users
+- [`docs/database/seeding.md`](../database/seeding.md) — seed policy / fail-closed
+- [`docs/database/backup.md`](../database/backup.md) — dump / restore
+- [`docs/database/checklist.md`](../database/checklist.md) — deploy DB checklist
 - [`docs/api/kit-pickup-operations.md`](../api/kit-pickup-operations.md) — operator allowlist
 - [`docs/api/kit-pickup-requests.md`](../api/kit-pickup-requests.md) — payment provider notes
 - [`docs/engineering/08-security.md`](../engineering/08-security.md) — frontend env rules
