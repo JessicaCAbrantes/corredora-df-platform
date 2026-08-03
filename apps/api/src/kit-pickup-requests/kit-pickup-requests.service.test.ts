@@ -135,7 +135,7 @@ type Store = {
 };
 
 function createPrismaMock(store: Store) {
-  return {
+  const prisma = {
     kitPickupService: {
       findUnique: async ({ where }: { where: { id: string } }) =>
         store.services.get(where.id) ?? null,
@@ -265,6 +265,35 @@ function createPrismaMock(store: Store) {
         const service = store.services.get(row.kitPickupServiceId)!;
         return { ...row, kitPickupService: service };
       },
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: {
+          id: string;
+          status?: KitPickupRequestStatus | { in: KitPickupRequestStatus[] };
+          paymentStatus?: KitPickupPaymentStatus;
+        };
+        data: Partial<{
+          status: KitPickupRequestStatus;
+          paymentStatus: KitPickupPaymentStatus;
+        }>;
+      }) => {
+        const row = store.requests.get(where.id);
+        if (!row) return { count: 0 };
+        if (where.paymentStatus != null && row.paymentStatus !== where.paymentStatus) {
+          return { count: 0 };
+        }
+        const statusOk =
+          where.status == null
+            ? true
+            : typeof where.status === "object" && "in" in where.status
+              ? where.status.in.includes(row.status)
+              : row.status === where.status;
+        if (!statusOk) return { count: 0 };
+        Object.assign(row, data, { updatedAt: new Date() });
+        return { count: 1 };
+      },
     },
     pickupTermAcceptance: {
       create: async ({
@@ -344,12 +373,44 @@ function createPrismaMock(store: Store) {
         Object.assign(row, data, { updatedAt: new Date() });
         return row;
       },
+      updateMany: async ({
+        where,
+        data,
+      }: {
+        where: {
+          id: string;
+          status?:
+            | KitPickupPaymentRecordStatus
+            | { in: KitPickupPaymentRecordStatus[] };
+        };
+        data: Partial<{
+          status: KitPickupPaymentRecordStatus;
+          providerPaymentId: string;
+        }>;
+      }) => {
+        const row = store.payments.get(where.id);
+        if (!row) return { count: 0 };
+        const allowed =
+          where.status == null
+            ? true
+            : typeof where.status === "object" && "in" in where.status
+              ? where.status.in.includes(row.status)
+              : row.status === where.status;
+        if (!allowed) return { count: 0 };
+        Object.assign(row, data, { updatedAt: new Date() });
+        return { count: 1 };
+      },
     },
-    $transaction: async (ops: Promise<unknown>[] | (() => Promise<unknown>)) => {
-      if (typeof ops === "function") return ops();
+    $transaction: async (
+      ops:
+        | Promise<unknown>[]
+        | ((tx: unknown) => Promise<unknown>),
+    ) => {
+      if (typeof ops === "function") return ops(prisma);
       return Promise.all(ops);
     },
   };
+  return prisma;
 }
 
 async function run(): Promise<void> {

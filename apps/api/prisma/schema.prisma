@@ -221,6 +221,18 @@ model PickupTermAcceptance {
 }
 
 /// Gateway payment record for a kit pickup request (Phase 2).
+///
+/// IMPORTANT — FASE 3.4-C3
+///
+/// PostgreSQL contains a partial unique index enforcing at most one PENDING
+/// payment per request. Prisma cannot model partial unique indexes.
+///
+///   CREATE UNIQUE INDEX "kit_pickup_payments_pending_request_uidx"
+///   ON "kit_pickup_payments" ("kit_pickup_request_id")
+///   WHERE "status" = 'PENDING';
+///
+/// Do NOT add @@unique([kitPickupRequestId, status]) and do NOT DROP this
+/// index in future migrations.
 model KitPickupPayment {
   id                 String                       @id @default(cuid())
   kitPickupRequestId String                       @map("kit_pickup_request_id")
