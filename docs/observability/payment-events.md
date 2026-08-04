@@ -1,18 +1,20 @@
 # Payment decision events — canonical contract
 
-**Status:** Frozen contract · **3.5-B1** checkout emitters ✅ · **3.5-B2** webhook emitters shipping  
+**Status:** Frozen · emitters **3.5-B1** ✅ · **3.5-B2** ✅ · contract/docs/tests **3.5-B3** ✅  
 **Phase:** FASE 3.5-B  
 **Date:** 2026-08-04  
+**Source of truth:** this file · runtime helper: `apps/api/src/payments/payment-decision-log.ts`  
+**Ops how-to:** [payments-runbook.md § Decision logs](../ops/payments-runbook.md#105-decision-logs-fase-35-b)
 
-This document is the **official contract** for structured payment decision logs. Dashboards, alerts, and runbooks must use these event names, categories, and field enums. Renaming after consumers depend on them is expensive — change only via an explicit contract revision.
+This is the **official contract** for structured payment decision logs. Dashboards, alerts, and runbooks must use these event names, categories, and field enums. Renaming after consumers depend on them is expensive — change only via an explicit contract revision (same PR that updates emitters + tests).
 
-**Implementation order (no domain/HTTP/ledger changes):**
+| PR | Scope | Status |
+|---|---|---|
+| **3.5-B1** | Checkout emitters | ✅ |
+| **3.5-B2** | Webhook emitters | ✅ |
+| **3.5-B3** | Canonical docs + runbook + contract tests | ✅ (this phase) |
 
-| PR | Scope |
-|---|---|
-| **3.5-B1** | Checkout events only ✅ |
-| **3.5-B2** | Webhook events only ← current |
-| **3.5-B3** | Broader tests + runbook pointer + schema enforcement notes |
+**Not in 3.5-B:** correlation / request IDs, OpenTelemetry, Prometheus, dashboards, alerting, logger framework refactor.
 
 ---
 
@@ -34,9 +36,11 @@ Do **not** mix these concepts.
 
 ---
 
-## Base JSON schema
+## Base JSON schema (frozen)
 
-Every payment decision log line **must** include these fields. Use `null` when not applicable. Do not invent values (e.g. do not invent `userId` for Stripe-only deliveries).
+Every payment decision log line is **one JSON object** (typically one line on stdout via `console`).
+
+Every line **must** include exactly these fields (use `null` when not applicable). Do **not** invent values (e.g. do not invent `userId` for Stripe-only deliveries).
 
 ```json
 {
@@ -57,26 +61,26 @@ Every payment decision log line **must** include these fields. Use `null` when n
 }
 ```
 
-| Field | Required | Rules |
-|---|---|---|
-| `timestamp` | yes | ISO-8601 UTC |
-| `service` | yes | Constant `"api"` for Nest emitters |
-| `environment` | yes | From runtime env (`development` / `test` / `production`, etc.) |
-| `event` | yes | Exact name from the catalog below |
-| `category` | yes | `trace` \| `audit` \| `warn` \| `error` |
-| `provider` | yes | `stripe` \| `mock` |
-| `paymentId` | yes | Internal id or `null` |
-| `requestId` | yes | Kit pickup request id or `null` |
-| `userId` | yes | Authenticated participant id or `null` (webhooks: usually `null`) |
-| `providerPaymentId` | yes | Gateway session/payment id or `null` |
-| `providerEventId` | yes | Provider `event.id` (or mock synthetic) or `null` |
-| `result` | yes | Closed enum — see below |
-| `code` | yes | Closed domain/security code or `null` — never a human message |
-| `reason` | yes | Closed constant or `null` — never free text |
+### Required fields
 
-### `result` (closed)
+| Field | Rules |
+|---|---|
+| `timestamp` | ISO-8601 UTC |
+| `service` | Constant `"api"` |
+| `environment` | Runtime (`development` / `test` / `production`, …) |
+| `event` | Exact name from the [catalog](#event-catalog) |
+| `category` | `trace` \| `audit` \| `warn` \| `error` |
+| `provider` | `stripe` \| `mock` (current gateways) |
+| `paymentId` | Internal id or `null` |
+| `requestId` | Kit pickup request id or `null` |
+| `userId` | Authenticated participant id or `null` (webhooks: usually `null`) |
+| `providerPaymentId` | Gateway session/payment id or `null` |
+| `providerEventId` | Provider `event.id` (or mock synthetic) or `null` |
+| `result` | Closed enum — see below |
+| `code` | Closed domain/security code or `null` — **never** a human message |
+| `reason` | Closed constant or `null` — **never** free text |
 
-Only:
+### `result` (closed — only these)
 
 - `success`
 - `rejected`
@@ -87,7 +91,7 @@ Only:
 
 ### `reason` (closed constants)
 
-Only the constants listed here (extend this document when adding a new one):
+Only the constants listed here (extend this document **and** TypeScript unions in the same PR):
 
 | Constant | Typical use |
 |---|---|
@@ -117,73 +121,81 @@ Only the constants listed here (extend this document when adding a new one):
 
 **Forbidden:** free text (`"old session"`, `"retry"`, `"race"`, …).
 
-### `code` (closed examples)
+### `code` (closed machine codes)
 
 Always a stable machine code (same family as API error envelopes), never a message string.
 
-Examples already in the payments domain / HTTP contract:
+Examples in use:
 
-- `PAYMENT_NOT_FOUND`
-- `NOT_FOUND`
-- `REQUEST_CANCELLED`
-- `AMOUNT_MISMATCH`
-- `CURRENCY_MISMATCH`
-- `PAYMENT_MISMATCH`
-- `REQUEST_MISMATCH`
-- `INVALID_STATUS`
-- `INVALID_SIGNATURE`
-- `MISSING_SIGNATURE`
-- `TERM_REQUIRED`
-- `PAYMENT_NOT_REQUIRED`
-- `ALREADY_PAID`
-- `PAYMENT_WAIVED`
-- `GATEWAY_ERROR`
-- `WEBHOOK_VERIFY_ERROR`
-- `WEBHOOK_PROCESSING_ERROR`
+`PAYMENT_NOT_FOUND` · `NOT_FOUND` · `REQUEST_CANCELLED` · `AMOUNT_MISMATCH` · `CURRENCY_MISMATCH` · `PAYMENT_MISMATCH` · `REQUEST_MISMATCH` · `INVALID_STATUS` · `INVALID_SIGNATURE` · `MISSING_SIGNATURE` · `TERM_REQUIRED` · `PAYMENT_NOT_REQUIRED` · `ALREADY_PAID` · `PAYMENT_WAIVED` · `GATEWAY_ERROR` · `WEBHOOK_VERIFY_ERROR` · `WEBHOOK_PROCESSING_ERROR`
 
-Extend this list in the same PR that introduces a new emitter `code`.
+### Forbidden fields / content
 
----
+Never appear on a decision log line:
 
-## Never log
-
-- Raw webhook body  
-- Signature headers / secrets (`STRIPE_*`, mock HMAC, `AUTH_SECRET`)  
+- Raw webhook body / `payloadHash` as a field  
+- Signature headers or secret values (`STRIPE_*`, mock HMAC, `AUTH_SECRET`)  
 - Cookies / session tokens  
-- Full customer email (omit or hash later if product requires)  
+- Full customer email, checkout URLs, card data  
 - Prisma / stack traces with query payloads  
+- Extra ad-hoc keys beyond the schema above  
 
 ---
 
 ## Event catalog
 
-| Event | Category | Typical `result` | Typical `reason` | Description | PR |
-|---|---|---|---|---|---|
-| `payment.checkout.created` | `audit` | `success` | `null` | New PENDING payment + checkout session bound | B1 |
-| `payment.checkout.reused` | `audit` | `success` | `existing_pending` \| `race_detected` | Reused existing PENDING (or after unique race) | B1 |
-| `payment.checkout.rejected` | `warn` | `rejected` | `invalid_transition` \| `term_required` \| `already_paid` \| `payment_waived` \| `payment_not_required` \| `request_cancelled` \| `request_not_found` | Checkout refused by domain rules | B1 |
-| `payment.checkout.gateway_error` | `error` | `error` | `gateway_failure` | Provider checkout failed; local row marked FAILED | B1 |
-| `payment.webhook.received` | `trace` | `success` | `null` | Verified delivery entered the pipeline (high volume; retries/replay) | B2 |
-| `payment.webhook.duplicate` | `audit` | `noop` | `duplicate_event` | Ledger short-circuit: already `PROCESSED` | B2 |
-| `payment.webhook.stale` | `warn` | `noop` | `stale_session` | Non-current provider session; domain unchanged; ledger may still complete | B2 |
-| `payment.webhook.payment_confirmed` | `audit` | `success` \| `noop` | `null` \| `already_processed` \| `crash_recovery` | Payment confirmed in domain (or soft noop / recovery) | B2 |
-| `payment.webhook.payment_failed` | `audit` | `success` \| `noop` | `expired` \| `declined` \| `cancelled_by_provider` \| `already_processed` \| `stale_session` | Payment failed path applied (or noop). **One event name**; discriminate with `reason` | B2 |
-| `payment.webhook.retryable` | `warn` | `rejected` | `payment_not_found` | Leave ledger `RECEIVED`; HTTP 500 so provider retries | B2 |
-| `payment.webhook.acknowledged_permanent` | `audit` | `noop` | `permanent_domain_conflict` | Permanent allowlist conflict: HTTP 200 + ledger `PROCESSED`, no domain write | B2 |
-| `payment.webhook.signature_rejected` | `warn` | `rejected` | `invalid_signature` | Missing/invalid signature → HTTP 401 | B2 |
-| `payment.webhook.ignored_unmapped` | `audit` | `noop` | `ignored_unmapped` | Authenticated delivery with no mapped domain event; ACK | B2 |
-| `payment.webhook.verify_error` | `error` | `error` | `verify_failure` | Verify failed for reasons other than signature | B2 |
-| `payment.webhook.processing_error` | `error` | `error` | `processing_failure` | Unexpected failure during processing | B2 |
+| Event | Category | Result | Reason | Description |
+|---|---|---|---|---|
+| `payment.checkout.created` | `audit` | `success` | `null` | New PENDING payment + checkout session bound |
+| `payment.checkout.reused` | `audit` | `success` | `existing_pending` \| `race_detected` | Reused existing PENDING (or after unique race) |
+| `payment.checkout.rejected` | `warn` | `rejected` | `invalid_transition` \| `term_required` \| `already_paid` \| `payment_waived` \| `payment_not_required` \| `request_cancelled` \| `request_not_found` | Checkout refused by domain rules |
+| `payment.checkout.gateway_error` | `error` | `error` | `gateway_failure` | Provider checkout failed; local row marked FAILED (new-checkout path) |
+| `payment.webhook.received` | `trace` | `success` | `null` | Verified delivery entered the pipeline (**not** emitted on duplicate replay) |
+| `payment.webhook.duplicate` | `audit` | `noop` | `duplicate_event` | Ledger short-circuit: already `PROCESSED` (**only** event on replay) |
+| `payment.webhook.stale` | `warn` | `noop` | `stale_session` | Non-current provider session; domain unchanged; ledger may still complete |
+| `payment.webhook.payment_confirmed` | `audit` | `success` \| `noop` | `null` \| `already_processed` \| `crash_recovery` | Payment confirmed in domain (or soft noop / recovery) |
+| `payment.webhook.payment_failed` | `audit` | `success` \| `noop` | `expired` \| `declined` \| `cancelled_by_provider` \| `already_processed` | Failed path applied (or noop). Discriminate with `reason` |
+| `payment.webhook.retryable` | `warn` | `rejected` | `payment_not_found` | Leave ledger `RECEIVED`; HTTP **500** so provider retries |
+| `payment.webhook.acknowledged_permanent` | `audit` | `noop` | `permanent_domain_conflict` | Permanent allowlist conflict: HTTP **200** + ledger `PROCESSED`, no domain write |
+| `payment.webhook.signature_rejected` | `warn` | `rejected` | `invalid_signature` | Missing/invalid signature → HTTP **401** |
+| `payment.webhook.ignored_unmapped` | `audit` | `noop` | `ignored_unmapped` | Authenticated delivery with no mapped domain event; ACK |
+| `payment.webhook.verify_error` | `error` | `error` | `verify_failure` | Verify failed for reasons other than signature |
+| `payment.webhook.processing_error` | `error` | `error` | `processing_failure` | Unexpected failure during processing |
+
+### Expected sequences (happy / common paths)
+
+```text
+Checkout OK:
+  payment.checkout.created
+
+Checkout reuse:
+  payment.checkout.reused   (reason=existing_pending|race_detected)
+
+Webhook paid (first delivery):
+  payment.webhook.received
+  payment.webhook.payment_confirmed
+
+Webhook replay:
+  payment.webhook.duplicate          ← only this event
+
+Webhook permanent conflict:
+  payment.webhook.received
+  payment.webhook.acknowledged_permanent   (+ HTTP 200, ledger PROCESSED)
+
+Webhook retryable miss:
+  payment.webhook.received
+  payment.webhook.retryable                (+ HTTP 500, ledger RECEIVED)
+
+Webhook bad signature:
+  payment.webhook.signature_rejected       (+ HTTP 401, no ledger)
+```
 
 ### Naming notes
 
-- Prefer **domain language** (`payment_confirmed`, `payment_failed`, `acknowledged_permanent`) over internals (`applied_*`) or protocol slang (`ack` alone).  
-- `payment.webhook.payment_failed` covers expired / declined / cancelled-by-provider; put the distinction in `reason`, do not multiply event names.  
-- Soft no-ops under confirmed/failed may use `result: "noop"` + `reason: "already_processed"` (or omit emitter until B2 proves need — prefer one event with `noop` over extra event names).
+- Prefer **domain language** (`payment_confirmed`, `payment_failed`, `acknowledged_permanent`) over internals (`applied_*`) or bare protocol slang (`ack`).  
+- One `payment_failed` event; put `expired` / `declined` / … in `reason`.  
 
 ### Jonathan / Operations Review checklist
-
-For each `event` name ask:
 
 > Can a new engineer understand what happened **without opening the code**?
 
@@ -193,7 +205,8 @@ If no → rename in this document **before** shipping emitters.
 
 ## Related
 
-- [Payments runbook](../ops/payments-runbook.md)  
+- [Payments runbook — decision logs](../ops/payments-runbook.md#105-decision-logs-fase-35-b)  
 - [Kit pickup payments contract](../api/kit-pickup-requests.md)  
-- [Architecture Baseline v1](../architecture/ARCHITECTURE-BASELINE-v1.md) (when merged)  
-- [Environment](../setup/environment.md)
+- [Architecture Baseline v1](../architecture/ARCHITECTURE-BASELINE-v1.md)  
+- [Environment](../setup/environment.md)  
+- Tests: `payment-checkout-logs.test.ts`, `payment-webhook-logs.test.ts`, `payment-decision-log.contract.test.ts`

@@ -2,7 +2,7 @@
 
 Operational procedures for kit-pickup payments in Corredora DF Platform.
 
-> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a production observability stack. Those are **not available currently** / future evolution unless noted.
+> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Loki/Datadog/Grafana alerting). Structured **payment decision logs** (FASE 3.5-B) **are** emitted as JSON lines on the API process stdout — see [§10.5](#105-decision-logs-fase-35-b).
 
 ## 1. Objective and limits
 
@@ -19,7 +19,8 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 
 - Implementing dual/previous secrets in code
 - Redis, message queues, workers, Kafka, Outbox
-- Observability platforms (metrics/traces/log shipping) — FASE 3.5+
+- Observability **platforms** (metrics exporters, log shipping, dashboards, alerting) — FASE 3.5-C+ / later
+- Correlation / request IDs — FASE 3.5-C
 - Docker/Kubernetes production deploy — FASE 3.6+
 - Changing payment domain logic, checkout, or HTTP contract (already C1–C4)
 - Routine SQL that forces `PROCESSED` / `PAID` (not a normal procedure)
@@ -28,6 +29,7 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 
 - Env / fail-closed: [`docs/setup/environment.md`](../setup/environment.md)
 - Webhook ledger / concurrency / HTTP matrix: [`docs/api/kit-pickup-requests.md`](../api/kit-pickup-requests.md)
+- Payment decision events (canonical): [`docs/observability/payment-events.md`](../observability/payment-events.md)
 - DB seed / backup / checklist: [`docs/database/`](../database/)
 
 ---
@@ -206,6 +208,61 @@ Run against the target environment (staging/production as applicable):
 
 ---
 
+## 10.5 Decision logs (FASE 3.5-B)
+
+Canonical catalog + JSON schema: [`docs/observability/payment-events.md`](../observability/payment-events.md).
+
+### Where to look
+
+| What | Where |
+|---|---|
+| Emitter | `apps/api` — `PaymentsService` / `PaymentWebhookController` |
+| Format | One JSON object per line on process **stdout** (`console.info` / `warn` / `error` / `debug` mapped from `category`) |
+| Filter key | Field `event` (e.g. `payment.webhook.payment_confirmed`) |
+| Correlation today | Use `paymentId`, `requestId`, `providerEventId`, `providerPaymentId` — **no** dedicated `correlationId` yet (3.5-C) |
+
+There is **no** dedicated log shipper or dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
+
+### Expected sequences
+
+```text
+Happy checkout:
+  payment.checkout.created
+
+Happy webhook (first delivery):
+  payment.webhook.received
+  → payment.webhook.payment_confirmed
+
+Stripe replay of same event.id:
+  payment.webhook.duplicate          (only — no "received")
+
+Permanent domain conflict (still HTTP 200):
+  payment.webhook.received
+  → payment.webhook.acknowledged_permanent
+
+Retryable PAYMENT_NOT_FOUND (HTTP 500, ledger RECEIVED):
+  payment.webhook.received
+  → payment.webhook.retryable
+
+Bad signature (HTTP 401, no ledger):
+  payment.webhook.signature_rejected
+```
+
+### Troubleshooting with events
+
+| Symptom | Look for | Notes |
+|---|---|---|
+| Participant paid but request not PAID | `payment.webhook.payment_confirmed` missing; or `stale` / `acknowledged_permanent` | Cross-check ledger + DB (§15–§16) |
+| Stripe storm / many retries | Many `duplicate` for same `providerEventId` | Healthy idempotency if HTTP 200 |
+| Persistent RECEIVED | `retryable` with `code=PAYMENT_NOT_FOUND` | §13–§14 |
+| 401 after rotation | `signature_rejected` | §11 — fix secret; do not force ACK |
+| Checkout never opens | `checkout.rejected` or `checkout.gateway_error` | Domain rule vs provider failure |
+| Suspected secret leak in logs | Any line containing `sk_`, `whsec_`, raw body | Must not happen; rotate if found (§19) |
+
+**Do not** treat free-text application errors as the contract — prefer the structured `event` + `code` + `reason` fields.
+
+---
+
 ## 11. Troubleshooting — webhook **401**
 
 **Meaning:** signature missing/invalid — **security class**. No ledger row.
@@ -217,6 +274,7 @@ Run against the target environment (staging/production as applicable):
 3. Raw body preserved for verify (`rawBody` enabled at Nest bootstrap).
 4. Recent secret rotation incomplete (Dashboard ≠ env).
 5. Not using mock secrets against Stripe (or vice versa).
+6. Decision log: `payment.webhook.signature_rejected` ([§10.5](#105-decision-logs-fase-35-b)).
 
 **Do not** ACK 401 with a forced 200. Fix config; allow Stripe retry.
 
@@ -229,7 +287,7 @@ Run against the target environment (staging/production as applicable):
 **Checks**
 
 1. Database connectivity / migrations applied (`/health/ready`).
-2. Application logs around `WEBHOOK_PROCESSING_ERROR` / `PAYMENT_NOT_FOUND`.
+2. Decision logs: `payment.webhook.retryable` / `processing_error` / `verify_error` ([§10.5](#105-decision-logs-fase-35-b)); legacy strings `WEBHOOK_PROCESSING_ERROR` / `PAYMENT_NOT_FOUND` may still appear in HTTP envelopes.
 3. Whether Stripe is still retrying the same `event.id`.
 4. Disk/connection pool exhaustion on the host (infra — outside this runbook’s tooling).
 

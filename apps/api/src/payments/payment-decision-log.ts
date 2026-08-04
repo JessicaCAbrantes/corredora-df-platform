@@ -55,6 +55,82 @@ export type PaymentDecisionEventName =
   | PaymentCheckoutEvent
   | PaymentWebhookEventName;
 
+/** Frozen key set — must match docs/observability/payment-events.md */
+export const PAYMENT_DECISION_PAYLOAD_KEYS = [
+  "timestamp",
+  "service",
+  "environment",
+  "event",
+  "category",
+  "provider",
+  "paymentId",
+  "requestId",
+  "userId",
+  "providerPaymentId",
+  "providerEventId",
+  "result",
+  "code",
+  "reason",
+] as const;
+
+export const PAYMENT_DECISION_RESULTS = [
+  "success",
+  "rejected",
+  "noop",
+  "error",
+] as const;
+
+export const PAYMENT_DECISION_CATEGORIES = [
+  "trace",
+  "audit",
+  "warn",
+  "error",
+] as const;
+
+export const PAYMENT_DECISION_REASONS = [
+  "existing_pending",
+  "race_detected",
+  "stale_session",
+  "duplicate_event",
+  "already_processed",
+  "crash_recovery",
+  "ignored_unmapped",
+  "permanent_domain_conflict",
+  "payment_not_found",
+  "request_not_found",
+  "invalid_signature",
+  "invalid_transition",
+  "request_cancelled",
+  "term_required",
+  "payment_not_required",
+  "already_paid",
+  "payment_waived",
+  "gateway_failure",
+  "expired",
+  "declined",
+  "cancelled_by_provider",
+  "verify_failure",
+  "processing_failure",
+] as const;
+
+export const PAYMENT_DECISION_EVENT_NAMES = [
+  "payment.checkout.created",
+  "payment.checkout.reused",
+  "payment.checkout.rejected",
+  "payment.checkout.gateway_error",
+  "payment.webhook.received",
+  "payment.webhook.duplicate",
+  "payment.webhook.stale",
+  "payment.webhook.payment_confirmed",
+  "payment.webhook.payment_failed",
+  "payment.webhook.retryable",
+  "payment.webhook.acknowledged_permanent",
+  "payment.webhook.signature_rejected",
+  "payment.webhook.ignored_unmapped",
+  "payment.webhook.verify_error",
+  "payment.webhook.processing_error",
+] as const;
+
 export type PaymentDecisionPayload = {
   timestamp: string;
   service: "api";
