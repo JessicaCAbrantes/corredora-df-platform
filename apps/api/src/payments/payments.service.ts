@@ -23,6 +23,10 @@ import {
   isPermanentDomainWebhookError,
   isRetryableDomainWebhookError,
 } from "./webhook-http-policy";
+import {
+  observeWebhookProcessingDuration,
+  type PaymentWebhookDurationOutcome,
+} from "./payment-metrics";
 
 export type PaymentsServiceOptions = {
   environment?: string;
@@ -453,6 +457,7 @@ export class PaymentsService {
    * FASE 3.4-C1/C2 — ledger + short-circuit by (provider, eventId).
    * FASE 3.4-C4 — permanent domain codes → PROCESSED (ACK); PAYMENT_NOT_FOUND → 500 + RECEIVED.
    * FASE 3.5-B2 — structured webhook decision logs (no HTTP/ledger/domain change).
+   * FASE 3.5-D2 — observes webhook processing duration (best-effort).
    */
   async processVerifiedWebhook(params: {
     providerEventId: string;
@@ -461,134 +466,159 @@ export class PaymentsService {
   }): Promise<"duplicate" | "applied"> {
     const provider = this.gateway.provider;
     const eventId = params.providerEventId;
+    const started = performance.now();
+    // Mutable box avoids TS control-flow narrowing across throw/return paths.
+    const outcomeRef: { value: PaymentWebhookDurationOutcome } = {
+      value: "applied",
+    };
 
-    const existing = await this.prisma.paymentWebhookEvent.findUnique({
-      where: { provider_eventId: { provider, eventId } },
-    });
+    try {
+      const existing = await this.prisma.paymentWebhookEvent.findUnique({
+        where: { provider_eventId: { provider, eventId } },
+      });
 
-    if (existing?.processedAt != null) {
+      if (existing?.processedAt != null) {
+        this.emitDecision({
+          event: "payment.webhook.duplicate",
+          category: "audit",
+          result: "noop",
+          providerEventId: eventId,
+          paymentId: params.event?.paymentId ?? null,
+          requestId: params.event?.kitPickupRequestId ?? null,
+          providerPaymentId: params.event?.providerPaymentId ?? null,
+          reason: "duplicate_event",
+        });
+        outcomeRef.value = "duplicate";
+        return "duplicate";
+      }
+
+      if (!existing) {
+        try {
+          await this.prisma.paymentWebhookEvent.create({
+            data: {
+              id: `pwe_${randomUUID().replace(/-/g, "")}`,
+              provider,
+              eventId,
+              status: PaymentWebhookEventStatus.RECEIVED,
+              payloadHash: params.payloadHash,
+            },
+          });
+        } catch (error: unknown) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002"
+          ) {
+            const raced = await this.prisma.paymentWebhookEvent.findUnique({
+              where: { provider_eventId: { provider, eventId } },
+            });
+            if (raced?.processedAt != null) {
+              this.emitDecision({
+                event: "payment.webhook.duplicate",
+                category: "audit",
+                result: "noop",
+                providerEventId: eventId,
+                paymentId: params.event?.paymentId ?? null,
+                requestId: params.event?.kitPickupRequestId ?? null,
+                providerPaymentId: params.event?.providerPaymentId ?? null,
+                reason: "duplicate_event",
+              });
+              outcomeRef.value = "duplicate";
+              return "duplicate";
+            }
+            // RECEIVED but not processed — allow domain retry after a crash.
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      // TRACE — omit on duplicate replay (acceptance: replay → only duplicate).
       this.emitDecision({
-        event: "payment.webhook.duplicate",
-        category: "audit",
-        result: "noop",
+        event: "payment.webhook.received",
+        category: "trace",
+        result: "success",
         providerEventId: eventId,
         paymentId: params.event?.paymentId ?? null,
         requestId: params.event?.kitPickupRequestId ?? null,
         providerPaymentId: params.event?.providerPaymentId ?? null,
-        reason: "duplicate_event",
       });
-      return "duplicate";
-    }
 
-    if (!existing) {
-      try {
-        await this.prisma.paymentWebhookEvent.create({
-          data: {
-            id: `pwe_${randomUUID().replace(/-/g, "")}`,
-            provider,
-            eventId,
-            status: PaymentWebhookEventStatus.RECEIVED,
-            payloadHash: params.payloadHash,
-          },
-        });
-      } catch (error: unknown) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === "P2002"
-        ) {
-          const raced = await this.prisma.paymentWebhookEvent.findUnique({
-            where: { provider_eventId: { provider, eventId } },
-          });
-          if (raced?.processedAt != null) {
+      if (params.event) {
+        try {
+          await this.handleVerifiedEvent(params.event, eventId);
+        } catch (error: unknown) {
+          if (isPermanentDomainWebhookError(error)) {
             this.emitDecision({
-              event: "payment.webhook.duplicate",
+              event: "payment.webhook.acknowledged_permanent",
               category: "audit",
               result: "noop",
               providerEventId: eventId,
-              paymentId: params.event?.paymentId ?? null,
-              requestId: params.event?.kitPickupRequestId ?? null,
-              providerPaymentId: params.event?.providerPaymentId ?? null,
-              reason: "duplicate_event",
+              paymentId: params.event.paymentId,
+              requestId: params.event.kitPickupRequestId,
+              providerPaymentId: params.event.providerPaymentId,
+              code: getWebhookHttpErrorCode(error),
+              reason: "permanent_domain_conflict",
             });
-            return "duplicate";
+            outcomeRef.value = "permanent_ack";
+            // Explicit allowlist only — mark PROCESSED and ACK (no domain change).
+          } else if (isRetryableDomainWebhookError(error)) {
+            this.emitDecision({
+              event: "payment.webhook.retryable",
+              category: "warn",
+              result: "rejected",
+              providerEventId: eventId,
+              paymentId: params.event.paymentId,
+              requestId: params.event.kitPickupRequestId,
+              providerPaymentId: params.event.providerPaymentId,
+              code: "PAYMENT_NOT_FOUND",
+              reason: "payment_not_found",
+            });
+            outcomeRef.value = "retryable";
+            // Leave RECEIVED; surface as 500 so the provider retries (FASE 3.4-C4).
+            throw this.error(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              "PAYMENT_NOT_FOUND",
+              "Pagamento não encontrado; retry do provedor permitido.",
+            );
+          } else {
+            // Unknown 4xx / other errors — do not auto-ACK.
+            throw error;
           }
-          // RECEIVED but not processed — allow domain retry after a crash.
-        } else {
-          throw error;
         }
+      } else {
+        this.emitDecision({
+          event: "payment.webhook.ignored_unmapped",
+          category: "audit",
+          result: "noop",
+          providerEventId: eventId,
+          reason: "ignored_unmapped",
+        });
       }
-    }
 
-    // TRACE — omit on duplicate replay (acceptance: replay → only duplicate).
-    this.emitDecision({
-      event: "payment.webhook.received",
-      category: "trace",
-      result: "success",
-      providerEventId: eventId,
-      paymentId: params.event?.paymentId ?? null,
-      requestId: params.event?.kitPickupRequestId ?? null,
-      providerPaymentId: params.event?.providerPaymentId ?? null,
-    });
-
-    if (params.event) {
-      try {
-        await this.handleVerifiedEvent(params.event, eventId);
-      } catch (error: unknown) {
-        if (isPermanentDomainWebhookError(error)) {
-          this.emitDecision({
-            event: "payment.webhook.acknowledged_permanent",
-            category: "audit",
-            result: "noop",
-            providerEventId: eventId,
-            paymentId: params.event.paymentId,
-            requestId: params.event.kitPickupRequestId,
-            providerPaymentId: params.event.providerPaymentId,
-            code: getWebhookHttpErrorCode(error),
-            reason: "permanent_domain_conflict",
-          });
-          // Explicit allowlist only — mark PROCESSED and ACK (no domain change).
-        } else if (isRetryableDomainWebhookError(error)) {
-          this.emitDecision({
-            event: "payment.webhook.retryable",
-            category: "warn",
-            result: "rejected",
-            providerEventId: eventId,
-            paymentId: params.event.paymentId,
-            requestId: params.event.kitPickupRequestId,
-            providerPaymentId: params.event.providerPaymentId,
-            code: "PAYMENT_NOT_FOUND",
-            reason: "payment_not_found",
-          });
-          // Leave RECEIVED; surface as 500 so the provider retries (FASE 3.4-C4).
-          throw this.error(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "PAYMENT_NOT_FOUND",
-            "Pagamento não encontrado; retry do provedor permitido.",
-          );
-        } else {
-          // Unknown 4xx / other errors — do not auto-ACK.
-          throw error;
-        }
-      }
-    } else {
-      this.emitDecision({
-        event: "payment.webhook.ignored_unmapped",
-        category: "audit",
-        result: "noop",
-        providerEventId: eventId,
-        reason: "ignored_unmapped",
+      await this.prisma.paymentWebhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: {
+          status: PaymentWebhookEventStatus.PROCESSED,
+          processedAt: new Date(),
+        },
       });
+
+      return "applied";
+    } catch (error: unknown) {
+      if (
+        outcomeRef.value !== "retryable" &&
+        outcomeRef.value !== "duplicate"
+      ) {
+        outcomeRef.value = "error";
+      }
+      throw error;
+    } finally {
+      observeWebhookProcessingDuration(
+        provider,
+        outcomeRef.value,
+        (performance.now() - started) / 1000,
+      );
     }
-
-    await this.prisma.paymentWebhookEvent.update({
-      where: { provider_eventId: { provider, eventId } },
-      data: {
-        status: PaymentWebhookEventStatus.PROCESSED,
-        processedAt: new Date(),
-      },
-    });
-
-    return "applied";
   }
 
   async handleVerifiedEvent(

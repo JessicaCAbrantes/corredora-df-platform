@@ -1,22 +1,24 @@
 # Payment Metrics Contract
 
-**Status:** Stable v1.0 (FASE 3.5-D1)  
-**Scope:** Counters derived from the [Payment Events Contract](./payment-events.md) (v1.1)  
-**Out of scope (later):** operational gauges/histograms (3.5-D2), dashboards/alerts (3.5-D3)
+**Status:** Stable — Counters **v1.0** (FASE 3.5-D1) + Operational **D2** (FASE 3.5-D2)  
+**Scope:**  
+- **v1.0:** Counters derived from the [Payment Events Contract](./payment-events.md) (v1.1)  
+- **D2:** Webhook processing histogram + DB-backed ledger RECEIVED gauges  
+**Out of scope:** dashboards/alerts (3.5-D3), Prometheus scrape, checkout creation latency, `payment_retryable_pending_total`
 
 ---
 
 ## 1. Purpose
 
-Freeze a **Metrics Contract v1.0** with the same discipline as payment decision events:
+Freeze metrics with the same discipline as payment decision events:
 
 - canonical metric names
-- types (`Counter` in v1.0)
+- types (`Counter`, `Gauge`, `Histogram`)
 - allowed labels (low cardinality, closed sets)
 - operational meaning
-- explicit increment rules
+- explicit increment / observe / sample rules
 
-Metrics answer **rate / volume** questions. Domain truth and forensic detail remain in **decision logs**.
+Counters answer **rate / volume**. Operational gauges/histograms answer **backlog and latency**. Domain truth remains in **decision logs**.
 
 ---
 
@@ -24,19 +26,19 @@ Metrics answer **rate / volume** questions. Domain truth and forensic detail rem
 
 | Rule | Detail |
 |---|---|
-| Single emission path | Counters are incremented only from `emitPaymentDecisionLog` → `recordPaymentDecisionMetric` |
-| One increment per decision emit | Each domain decision emits **one** decision event; the mapped counter increments once for that emit. Stripe replays that take the duplicate path increment `payment_webhook_duplicate_total`, not `payment_confirmed_total` again. Transient retries that re-emit `webhook.retryable` intentionally increment again (one count per attempt). |
-| Event → metric mapping | Each counter maps from exactly one decision `event` value (1:1 with the catalog below) |
+| Counter emission path | Counters only from `emitPaymentDecisionLog` → `recordPaymentDecisionMetric` |
+| One increment per decision emit | Each domain decision emits **one** decision event; the mapped counter increments once. Stripe replays → `payment_webhook_duplicate_total`, not `payment_confirmed_total` again. Transient retries that re-emit `webhook.retryable` intentionally increment again. |
+| Histogram / gauge paths | Histograms via `observe()`; gauges via `set()` from the ledger sampler — **not** via the decision-log counter map |
 | No ID labels | Never label with `paymentId`, `requestId`, `correlationId`, `userId`, `providerPaymentId`, `providerEventId` |
-| Low cardinality | Labels only: `provider`, and when listed `reason` / `code` (closed enums from the events contract) |
-| No derived domain metrics | Do not invent counters for “business KPIs”; keep those in logs/analytics later |
-| No dual-write | Application code must not increment counters outside the decision-log hook |
-| Best-effort | Metric recording must not throw into the payment path; failures are swallowed after the decision log is written |
-| Process-local | v1.0 ships an in-memory registry per process (Prometheus / scrape is optional later) |
+| Low cardinality | Labels only from the closed sets declared per metric |
+| No dual-write counters | Application code must not increment counters outside the decision-log hook |
+| Best-effort | Metric recording must not throw into the payment path |
+| Process-local series | In-memory registry per process until scrape (D3) |
+| DB-backed gauges | Represent **global DB truth**; in multi-instance scrapes **do not sum** replica series (use max / any) |
 
 ---
 
-## 3. Metric catalog (Counters)
+## 3. Metric catalog (Counters) — v1.0
 
 | Metric | Type | Labels | Increment when decision `event` is | Meaning |
 |---|---|---|---|---|
@@ -48,64 +50,114 @@ Metrics answer **rate / volume** questions. Domain truth and forensic detail rem
 | `payment_failed_total` | Counter | `provider`, `reason` | `payment.webhook.payment_failed` | Payment → FAILED |
 | `payment_retryable_total` | Counter | `provider`, `code` | `payment.webhook.retryable` | Transient webhook failure (HTTP 5xx path) |
 | `payment_signature_rejected_total` | Counter | `provider` | `payment.webhook.signature_rejected` | Signature / auth verify failed |
-| `payment_permanent_ack_total` | Counter | `provider`, `code` | `payment.webhook.acknowledged_permanent` | Permanent ACK (e.g. PAYMENT_NOT_FOUND) |
+| `payment_permanent_ack_total` | Counter | `provider`, `code` | `payment.webhook.acknowledged_permanent` | Permanent ACK (allowlist domain conflict) |
 | `payment_webhook_duplicate_total` | Counter | `provider` | `payment.webhook.duplicate` | Idempotent replay noop |
 | `payment_webhook_stale_total` | Counter | `provider` | `payment.webhook.stale` | Event ignored as stale |
 | `payment_webhook_ignored_unmapped_total` | Counter | `provider` | `payment.webhook.ignored_unmapped` | Unmapped provider event type |
 | `payment_webhook_verify_error_total` | Counter | `provider` | `payment.webhook.verify_error` | Unexpected verify exception |
 | `payment_webhook_processing_error_total` | Counter | `provider` | `payment.webhook.processing_error` | Unexpected processing exception |
 
-### Explicitly not in v1.0
+### Explicitly not counters
 
-| Decision event | Why deferred |
+| Decision event | Why |
 |---|---|
-| `payment.webhook.received` | High volume / trace-oriented; latency & volume better as D2 histogram + optional counter |
-
-### Operational gauges / histograms (3.5-D2 — not frozen here)
-
-Examples reserved for D2 (names may change until D2 ships):
-
-- `payment_ledger_received_age_seconds` (Gauge)
-- `payment_ledger_received_total` (Gauge)
-- `payment_retryable_pending_total` (Gauge)
-- `payment_webhook_processing_duration_seconds` (Histogram/Summary)
+| `payment.webhook.received` | High-volume TRACE; latency covered by D2 histogram |
 
 ---
 
-## 4. Label values
+## 4. Operational metrics (D2)
+
+### 4.1 Histogram
+
+| Metric | Type | Labels | Observe when | Meaning |
+|---|---|---|---|---|
+| `payment_webhook_processing_duration_seconds` | Histogram | `provider`, `outcome` | End of `processVerifiedWebhook` (best-effort `finally`) | Wall time of verified webhook processing (excludes signature verify) |
+
+**Closed `outcome` values:**
+
+| `outcome` | When |
+|---|---|
+| `duplicate` | Ledger already `PROCESSED` (idempotent replay) |
+| `applied` | Domain path completed and ledger marked `PROCESSED` (includes confirmed / failed / stale / ignored_unmapped) |
+| `permanent_ack` | Permanent domain conflict ACK’d → `PROCESSED` |
+| `retryable` | Transient path (e.g. `PAYMENT_NOT_FOUND`) → stays `RECEIVED`, HTTP 500 |
+| `error` | Other failure before successful completion |
+
+**Buckets (seconds, cumulative):**  
+`0.005`, `0.01`, `0.025`, `0.05`, `0.1`, `0.25`, `0.5`, `1`, `2.5`, `5`, `10`, `+Inf`
+
+### 4.2 DB-backed gauges
+
+| Metric | Type | Labels | Update | Meaning |
+|---|---|---|---|---|
+| `payment_ledger_received_total` | Gauge | `provider` | Periodic sampler | Count of ledger rows with `status = RECEIVED` |
+| `payment_ledger_received_age_seconds` | Gauge | `provider` | Periodic sampler | Age in seconds of the **oldest** `RECEIVED` row for that provider |
+
+**Sampler**
+
+- Implementation: `PaymentLedgerMetricsSampler` (`groupBy` provider on `RECEIVED`)
+- Default interval: **30s** (`DEFAULT_LEDGER_METRICS_SAMPLE_MS`)
+- Override: env `PAYMENT_METRICS_LEDGER_SAMPLE_MS` (milliseconds; `0` disables)
+- **Never** run this `COUNT`/`groupBy` on every webhook request
+- Includes current `PAYMENT_PROVIDER` in the provider hint so empty backlog still publishes **0**
+
+**Empty backlog semantics (required)**
+
+| Condition | `payment_ledger_received_total` | `payment_ledger_received_age_seconds` |
+|---|---|---|
+| Zero `RECEIVED` rows for provider | **0** | **0** |
+
+Do **not** use `null`, omit the series, or emit `NaN`.
+
+**Not in D2**
+
+| Candidate | Why deferred |
+|---|---|
+| `payment_retryable_pending_total` | No persisted retryable state distinct from `RECEIVED` |
+| `payment_checkout_duration_seconds` | Would measure session **creation** latency, not time-to-paid — rename/clarify if added later |
+| Schema / status index migration | Not required at current volume |
+| Prometheus scrape / dashboards / alerts | D3 |
+
+---
+
+## 5. Label values
 
 | Label | Allowed values |
 |---|---|
-| `provider` | Closed `PaymentProvider` enum (`mock`, `stripe`, …) |
-| `reason` | Closed `PaymentDecisionReason` when the metric declares the label; otherwise omit |
-| `code` | Closed `PaymentDecisionCode` when the metric declares the label; otherwise omit |
+| `provider` | Closed payment provider names (`mock`, `stripe`, …) |
+| `reason` | Closed `PaymentDecisionReason` when the metric declares it |
+| `code` | Closed decision/HTTP code when the metric declares it |
+| `outcome` | Closed set in §4.1 only |
 
-Missing optional domain fields on the event **must not** invent label values. If `reason`/`code` is required by the metric and absent on the event, use the literal `"unknown"` (stable sentinel — not a free-form string). Emitters should always pass the closed enum when the decision has one; `"unknown"` is a contract fallback for incomplete payloads, not a normal operational label.
+Missing optional decision fields on counters: use `"unknown"` only as fallback — not a normal operational label.
 
 ---
 
-## 5. Versioning
+## 6. Versioning
 
 | Change | Action |
 |---|---|
-| New counter or new allowed label | Bump minor (v1.1) + update this doc + mapping table in code |
-| Rename / remove metric or change label meaning | Bump major (v2.0) — avoid until necessary |
-| D2 gauges/histograms | New section or companion doc; do not silently alter v1.0 counters |
+| New counter or new allowed counter label | Bump counters minor + update this doc + mapping |
+| D2 operational add (this section) | Additive; **do not** rename/remove v1.0 counters |
+| Rename / remove metric or change label meaning | Bump major — avoid until necessary |
 
 ---
 
-## 6. Implementation pointer
+## 7. Implementation pointer
 
 | Piece | Location |
 |---|---|
-| Registry + mapping | `apps/api/src/payments/payment-metrics.ts` |
-| Hook | `emitPaymentDecisionLog` → `recordPaymentDecisionMetric` |
-| Contract tests | `apps/api/src/payments/payment-metrics.contract.test.ts` |
+| Registry + mapping + observe/set | `apps/api/src/payments/payment-metrics.ts` |
+| Counter hook | `emitPaymentDecisionLog` → `recordPaymentDecisionMetric` |
+| Duration observe | `PaymentsService.processVerifiedWebhook` |
+| Ledger sampler | `apps/api/src/payments/payment-ledger-metrics-sampler.ts` |
+| Contract tests | `payment-metrics.contract.test.ts`, `payment-metrics-operational.contract.test.ts` |
 
 ---
 
-## 7. Honest limits (v1.0)
+## 8. Honest limits
 
-- Counters are **per process** until a scrape/export layer exists.
-- Multi-instance totals require aggregation outside the app (D3).
-- Metrics do **not** replace decision logs for correlation or forensic queries.
+- Counters and histograms are **per process** until scrape/export (D3). Multi-instance → **sum** those series.
+- DB-backed gauges reflect **global** ledger state. Multi-instance → **do not sum** replicas.
+- Metrics do **not** replace decision logs for correlation or forensics.
+- `payment_ledger_received_total` is the open RECEIVED backlog (NOT_FOUND **and** crash/other stuck rows) — not a pure “retryable only” count.

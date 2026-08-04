@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MockPaymentGateway } from "./mock-payment-gateway";
 import type { PaymentGateway } from "./payment-gateway";
 import { PaymentWebhookController } from "./payment-webhook.controller";
+import { PaymentLedgerMetricsSampler } from "./payment-ledger-metrics-sampler";
 import { PaymentsService } from "./payments.service";
 import { StripePaymentGateway } from "./stripe-payment-gateway";
 
@@ -49,6 +50,7 @@ export class PaymentsServiceProvider extends PaymentsService {
       provide: PaymentsService,
       useClass: PaymentsServiceProvider,
     },
+    PaymentLedgerMetricsSampler,
   ],
   exports: [PaymentsService, PAYMENT_GATEWAY],
 })
