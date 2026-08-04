@@ -221,7 +221,7 @@ Canonical catalog + JSON schema: [`docs/observability/payment-events.md`](../obs
 | Format | One JSON object per line on process **stdout** (`console.info` / `warn` / `error` / `debug` mapped from `category`) |
 | Filter key | Field `event` (e.g. `payment.webhook.payment_confirmed`) |
 | Correlation | Field `correlationId` — see [correlation.md](../observability/correlation.md); header `x-correlation-id` |
-| Metrics (v1.0) | Process-local counters via `emitPaymentDecisionLog` — [payment-metrics.md](../observability/payment-metrics.md); **no** scrape/dashboard yet |
+| Metrics (v1.0 + D2) | Process-local counters/histograms + DB-backed RECEIVED gauges — [payment-metrics.md](../observability/payment-metrics.md); **no** scrape/dashboard yet |
 
 There is **no** dedicated log shipper or dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
 
