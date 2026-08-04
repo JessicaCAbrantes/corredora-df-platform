@@ -16,8 +16,11 @@ export class PaymentsServiceProvider extends PaymentsService {
   constructor(
     prisma: PrismaService,
     @Inject(PAYMENT_GATEWAY) gateway: PaymentGateway,
+    config: ConfigService<Env, true>,
   ) {
-    super(prisma, gateway);
+    super(prisma, gateway, {
+      environment: config.get("NODE_ENV", { infer: true }),
+    });
   }
 }
 
