@@ -13,6 +13,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import { AuthBoundaryService } from "../auth/auth.boundary";
 import type { Env } from "../config/env.validation";
+import { getCorrelationId } from "../observability/correlation-context";
 import { PaymentsService } from "../payments/payments.service";
 import { CreateKitPickupRequestDto } from "./dto/create-kit-pickup-request.dto";
 import { KitPickupRequestsService } from "./kit-pickup-requests.service";
@@ -97,6 +98,7 @@ export class KitPickupRequestsController {
       requestId: id,
       successUrl: `${successUrl}${successUrl.includes("?") ? "&" : "?"}requestId=${encodeURIComponent(id)}`,
       cancelUrl: `${cancelUrl}${cancelUrl.includes("?") ? "&" : "?"}requestId=${encodeURIComponent(id)}`,
+      correlationId: getCorrelationId(),
     });
 
     return { data: result };

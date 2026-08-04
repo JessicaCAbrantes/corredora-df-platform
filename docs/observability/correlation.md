@@ -19,13 +19,15 @@ Inbound HTTP request
   → payment decision logs read `correlationId` from ALS
 ```
 
-| Stage | Behavior |
+## Propagation rules
+
+| Layer | Responsibility |
 |---|---|
-| Origin | Client may send `x-correlation-id` (8–128 chars, `[\w.:-]+`); otherwise API generates UUID |
-| Propagation | Controllers / services / gateways share ALS for that request |
-| Decision logs | Every payment event payload includes `correlationId` (or `null` if no store — e.g. unit tests without middleware) |
-| Checkout → provider | Stripe/mock receive `correlationId` in session metadata / mock query+body |
-| Webhook | Prefer recovered metadata id; else inbound request id; else generate |
+| Middleware | Create / accept id; store in ALS; echo header |
+| HTTP controllers | May read `getCorrelationId()` and pass an opaque string into services |
+| `PaymentsService` / domain | Receives optional `correlationId?: string` only — **no** ALS / Express / headers |
+| Decision log helper | Reads ALS (or explicit input) when emitting JSON |
+| Gateways | Forward opaque string into provider metadata |
 
 ## Header
 

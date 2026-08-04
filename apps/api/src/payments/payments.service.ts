@@ -23,7 +23,6 @@ import {
   isPermanentDomainWebhookError,
   isRetryableDomainWebhookError,
 } from "./webhook-http-policy";
-import { getCorrelationId } from "../observability/correlation-context";
 
 export type PaymentsServiceOptions = {
   environment?: string;
@@ -105,6 +104,8 @@ export class PaymentsService {
     successUrl: string;
     cancelUrl: string;
     customerEmail?: string;
+    /** Opaque correlation id from HTTP edge (FASE 3.5-C) — optional. */
+    correlationId?: string;
   }): Promise<{ checkoutUrl: string; paymentId: string; provider: string }> {
     const request = await this.prisma.kitPickupRequest.findFirst({
       where: { id: params.requestId, userId: params.userId },
@@ -191,6 +192,7 @@ export class PaymentsService {
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
+        correlationId: params.correlationId,
         reuseReason: "existing_pending",
       });
     }
@@ -230,6 +232,7 @@ export class PaymentsService {
           successUrl: params.successUrl,
           cancelUrl: params.cancelUrl,
           customerEmail: params.customerEmail,
+          correlationId: params.correlationId,
           reuseReason: "race_detected",
         });
       }
@@ -245,7 +248,7 @@ export class PaymentsService {
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
-        correlationId: getCorrelationId(),
+        correlationId: params.correlationId,
       });
 
       await this.prisma.$transaction([
@@ -313,6 +316,7 @@ export class PaymentsService {
     successUrl: string;
     cancelUrl: string;
     customerEmail?: string;
+    correlationId?: string;
     reuseReason: Extract<
       PaymentDecisionReason,
       "existing_pending" | "race_detected"
@@ -327,7 +331,7 @@ export class PaymentsService {
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
-        correlationId: getCorrelationId(),
+        correlationId: params.correlationId,
       });
 
       await this.prisma.kitPickupPayment.update({
