@@ -10,6 +10,7 @@ Descrever a arquitetura de alto nível do sistema — camadas, boundaries, fluxo
 
 | Área | Documentação relacionada |
 |---|---|
+| **FASE 3 freeze (baseline)** | [ARCHITECTURE-BASELINE-v1.md](./ARCHITECTURE-BASELINE-v1.md) |
 | Estrutura de pastas | [engineering/01-folder-structure.md](../engineering/01-folder-structure.md) |
 | Padrão de componentes | [engineering/04-component-pattern.md](../engineering/04-component-pattern.md) |
 | Contratos de API | [api/README.md](../api/README.md) |
@@ -28,7 +29,7 @@ Descrever a arquitetura de alto nível do sistema — camadas, boundaries, fluxo
                        │ REST /api/v1
 ┌──────────────────────▼──────────────────────────┐
 │                   apps/api                       │
-│              NestJS · Prisma (futuro)             │
+│              NestJS · Prisma · PostgreSQL         │
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
