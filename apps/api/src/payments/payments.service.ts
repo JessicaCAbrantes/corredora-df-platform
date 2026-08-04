@@ -8,11 +8,22 @@ import {
   Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import {
+  checkoutRejectReason,
+  emitPaymentDecisionLog,
+  type PaymentDecisionLogSink,
+  type PaymentDecisionReason,
+} from "./payment-decision-log";
 import type { PaymentGateway, VerifiedPaymentEvent } from "./payment-gateway";
 import {
   isPermanentDomainWebhookError,
   isRetryableDomainWebhookError,
 } from "./webhook-http-policy";
+
+export type PaymentsServiceOptions = {
+  environment?: string;
+  decisionLogSink?: PaymentDecisionLogSink;
+};
 
 /** Partial unique index from migration 20260803160000. */
 export const KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX =
@@ -63,10 +74,17 @@ export function isPendingRequestUniqueConflict(error: unknown): boolean {
 
 @Injectable()
 export class PaymentsService {
+  private readonly environment: string;
+  private readonly decisionLogSink?: PaymentDecisionLogSink;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: PaymentGateway,
-  ) {}
+    options?: PaymentsServiceOptions,
+  ) {
+    this.environment = options?.environment ?? process.env.NODE_ENV ?? "development";
+    this.decisionLogSink = options?.decisionLogSink;
+  }
 
   getProviderName(): string {
     return this.gateway.provider;
@@ -96,16 +114,20 @@ export class PaymentsService {
     });
 
     if (!request) {
-      throw this.notFound();
+      throw this.rejectCheckout(params, "NOT_FOUND", "Solicitação não encontrada.", HttpStatus.NOT_FOUND);
     }
 
     if (request.status === KitPickupRequestStatus.CANCELLED) {
-      throw this.error(HttpStatus.CONFLICT, "REQUEST_CANCELLED", "Solicitação cancelada.");
+      throw this.rejectCheckout(
+        params,
+        "REQUEST_CANCELLED",
+        "Solicitação cancelada.",
+      );
     }
 
     if (!request.termAcceptance) {
-      throw this.error(
-        HttpStatus.CONFLICT,
+      throw this.rejectCheckout(
+        params,
         "TERM_REQUIRED",
         "Aceite o termo antes de iniciar o pagamento.",
       );
@@ -115,27 +137,35 @@ export class PaymentsService {
       request.feeAmountSnapshot == null ||
       !request.feeCurrencySnapshot
     ) {
-      throw this.error(
-        HttpStatus.CONFLICT,
+      throw this.rejectCheckout(
+        params,
         "PAYMENT_NOT_REQUIRED",
         "Este serviço não possui taxa.",
       );
     }
 
     if (request.status === KitPickupRequestStatus.PAID) {
-      throw this.error(HttpStatus.CONFLICT, "ALREADY_PAID", "Pagamento já confirmado.");
+      throw this.rejectCheckout(
+        params,
+        "ALREADY_PAID",
+        "Pagamento já confirmado.",
+      );
     }
 
     if (request.status === KitPickupRequestStatus.WAIVED) {
-      throw this.error(HttpStatus.CONFLICT, "PAYMENT_WAIVED", "Pagamento dispensado.");
+      throw this.rejectCheckout(
+        params,
+        "PAYMENT_WAIVED",
+        "Pagamento dispensado.",
+      );
     }
 
     if (
       request.status !== KitPickupRequestStatus.PAYMENT_PENDING &&
       request.status !== KitPickupRequestStatus.TERM_ACCEPTED
     ) {
-      throw this.error(
-        HttpStatus.CONFLICT,
+      throw this.rejectCheckout(
+        params,
         "INVALID_STATUS",
         "Solicitação não está pronta para pagamento.",
       );
@@ -149,12 +179,14 @@ export class PaymentsService {
       return this.checkoutWithExistingPending({
         pending: existingPending,
         requestId: request.id,
+        userId: params.userId,
         requestStatus: request.status,
         amount,
         currency,
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
+        reuseReason: "existing_pending",
       });
     }
 
@@ -186,12 +218,14 @@ export class PaymentsService {
         return this.checkoutWithExistingPending({
           pending: racedPending,
           requestId: request.id,
+          userId: params.userId,
           requestStatus: request.status,
           amount,
           currency,
           successUrl: params.successUrl,
           cancelUrl: params.cancelUrl,
           customerEmail: params.customerEmail,
+          reuseReason: "race_detected",
         });
       }
       throw error;
@@ -225,6 +259,16 @@ export class PaymentsService {
         }),
       ]);
 
+      this.emitCheckoutDecision({
+        event: "payment.checkout.created",
+        category: "audit",
+        result: "success",
+        paymentId,
+        requestId: request.id,
+        userId: params.userId,
+        providerPaymentId: checkout.providerPaymentId,
+      });
+
       return {
         checkoutUrl: checkout.checkoutUrl,
         paymentId,
@@ -234,6 +278,16 @@ export class PaymentsService {
       await this.prisma.kitPickupPayment.update({
         where: { id: paymentId },
         data: { status: KitPickupPaymentRecordStatus.FAILED },
+      });
+      this.emitCheckoutDecision({
+        event: "payment.checkout.gateway_error",
+        category: "error",
+        result: "error",
+        paymentId,
+        requestId: request.id,
+        userId: params.userId,
+        code: "GATEWAY_ERROR",
+        reason: "gateway_failure",
       });
       throw this.error(
         HttpStatus.BAD_GATEWAY,
@@ -246,46 +300,129 @@ export class PaymentsService {
   private async checkoutWithExistingPending(params: {
     pending: { id: string };
     requestId: string;
+    userId: string;
     requestStatus: KitPickupRequestStatus;
     amount: string;
     currency: string;
     successUrl: string;
     cancelUrl: string;
     customerEmail?: string;
+    reuseReason: Extract<
+      PaymentDecisionReason,
+      "existing_pending" | "race_detected"
+    >;
   }): Promise<{ checkoutUrl: string; paymentId: string; provider: string }> {
-    const checkout = await this.gateway.createCheckout({
-      paymentId: params.pending.id,
-      kitPickupRequestId: params.requestId,
-      amount: params.amount,
-      currency: params.currency,
-      successUrl: params.successUrl,
-      cancelUrl: params.cancelUrl,
-      customerEmail: params.customerEmail,
-    });
+    try {
+      const checkout = await this.gateway.createCheckout({
+        paymentId: params.pending.id,
+        kitPickupRequestId: params.requestId,
+        amount: params.amount,
+        currency: params.currency,
+        successUrl: params.successUrl,
+        cancelUrl: params.cancelUrl,
+        customerEmail: params.customerEmail,
+      });
 
-    await this.prisma.kitPickupPayment.update({
-      where: { id: params.pending.id },
-      data: {
-        provider: checkout.provider,
-        providerPaymentId: checkout.providerPaymentId,
-      },
-    });
-
-    if (params.requestStatus !== KitPickupRequestStatus.PAYMENT_PENDING) {
-      await this.prisma.kitPickupRequest.update({
-        where: { id: params.requestId },
+      await this.prisma.kitPickupPayment.update({
+        where: { id: params.pending.id },
         data: {
-          status: KitPickupRequestStatus.PAYMENT_PENDING,
-          paymentStatus: KitPickupPaymentStatus.PENDING,
+          provider: checkout.provider,
+          providerPaymentId: checkout.providerPaymentId,
         },
       });
-    }
 
-    return {
-      checkoutUrl: checkout.checkoutUrl,
-      paymentId: params.pending.id,
-      provider: checkout.provider,
-    };
+      if (params.requestStatus !== KitPickupRequestStatus.PAYMENT_PENDING) {
+        await this.prisma.kitPickupRequest.update({
+          where: { id: params.requestId },
+          data: {
+            status: KitPickupRequestStatus.PAYMENT_PENDING,
+            paymentStatus: KitPickupPaymentStatus.PENDING,
+          },
+        });
+      }
+
+      this.emitCheckoutDecision({
+        event: "payment.checkout.reused",
+        category: "audit",
+        result: "success",
+        paymentId: params.pending.id,
+        requestId: params.requestId,
+        userId: params.userId,
+        providerPaymentId: checkout.providerPaymentId,
+        reason: params.reuseReason,
+      });
+
+      return {
+        checkoutUrl: checkout.checkoutUrl,
+        paymentId: params.pending.id,
+        provider: checkout.provider,
+      };
+    } catch (error: unknown) {
+      this.emitCheckoutDecision({
+        event: "payment.checkout.gateway_error",
+        category: "error",
+        result: "error",
+        paymentId: params.pending.id,
+        requestId: params.requestId,
+        userId: params.userId,
+        code: "GATEWAY_ERROR",
+        reason: "gateway_failure",
+      });
+      // Preserve prior behavior for reused path (no FAILED rewrite / no envelope change).
+      throw error;
+    }
+  }
+
+  private emitCheckoutDecision(params: {
+    event:
+      | "payment.checkout.created"
+      | "payment.checkout.reused"
+      | "payment.checkout.rejected"
+      | "payment.checkout.gateway_error";
+    category: "audit" | "warn" | "error";
+    result: "success" | "rejected" | "error";
+    paymentId?: string | null;
+    requestId?: string | null;
+    userId?: string | null;
+    providerPaymentId?: string | null;
+    code?: string | null;
+    reason?: PaymentDecisionReason | null;
+  }): void {
+    emitPaymentDecisionLog(
+      {
+        environment: this.environment,
+        event: params.event,
+        category: params.category,
+        provider: this.gateway.provider,
+        paymentId: params.paymentId,
+        requestId: params.requestId,
+        userId: params.userId,
+        providerPaymentId: params.providerPaymentId,
+        providerEventId: null,
+        result: params.result,
+        code: params.code,
+        reason: params.reason,
+      },
+      this.decisionLogSink,
+    );
+  }
+
+  private rejectCheckout(
+    params: { userId: string; requestId: string },
+    code: string,
+    message: string,
+    status: number = HttpStatus.CONFLICT,
+  ): HttpException {
+    this.emitCheckoutDecision({
+      event: "payment.checkout.rejected",
+      category: "warn",
+      result: "rejected",
+      requestId: params.requestId,
+      userId: params.userId,
+      code,
+      reason: checkoutRejectReason(code),
+    });
+    return this.error(status, code, message);
   }
 
   /**
@@ -585,10 +722,6 @@ export class PaymentsService {
         data: { paymentStatus: KitPickupPaymentStatus.FAILED },
       });
     });
-  }
-
-  private notFound(): HttpException {
-    return this.error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Solicitação não encontrada.");
   }
 
   private error(status: number, code: string, message: string): HttpException {

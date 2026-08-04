@@ -1,6 +1,6 @@
 # Payment decision events — canonical contract
 
-**Status:** Frozen (pre-implementation)  
+**Status:** Frozen contract · **3.5-B1 checkout emitters** shipping in this phase  
 **Phase:** FASE 3.5-B  
 **Date:** 2026-08-04  
 
@@ -10,11 +10,9 @@ This document is the **official contract** for structured payment decision logs.
 
 | PR | Scope |
 |---|---|
-| **3.5-B1** | Checkout events only |
+| **3.5-B1** | Checkout events only ← current |
 | **3.5-B2** | Webhook events only |
-| **3.5-B3** | Tests + runbook pointer + enforce this schema |
-
-Until B1 merges, **no runtime emitters** are required to exist.
+| **3.5-B3** | Broader tests + runbook pointer + schema enforcement notes |
 
 ---
 
@@ -102,6 +100,7 @@ Only the constants listed here (extend this document when adding a new one):
 | `ignored_unmapped` | Verified delivery with no mapped domain event |
 | `permanent_domain_conflict` | Allowlist permanent domain code → ACK without domain write |
 | `payment_not_found` | Retryable missing payment row |
+| `request_not_found` | Checkout for unknown / non-owned request |
 | `invalid_signature` | Missing/invalid webhook signature |
 | `invalid_transition` | Checkout/request status not ready for payment |
 | `request_cancelled` | Request cancelled |
@@ -125,6 +124,7 @@ Always a stable machine code (same family as API error envelopes), never a messa
 Examples already in the payments domain / HTTP contract:
 
 - `PAYMENT_NOT_FOUND`
+- `NOT_FOUND`
 - `REQUEST_CANCELLED`
 - `AMOUNT_MISMATCH`
 - `CURRENCY_MISMATCH`
@@ -161,7 +161,7 @@ Extend this list in the same PR that introduces a new emitter `code`.
 |---|---|---|---|---|---|
 | `payment.checkout.created` | `audit` | `success` | `null` | New PENDING payment + checkout session bound | B1 |
 | `payment.checkout.reused` | `audit` | `success` | `existing_pending` \| `race_detected` | Reused existing PENDING (or after unique race) | B1 |
-| `payment.checkout.rejected` | `warn` | `rejected` | `invalid_transition` \| `term_required` \| `already_paid` \| `payment_waived` \| `payment_not_required` \| `request_cancelled` | Checkout refused by domain rules | B1 |
+| `payment.checkout.rejected` | `warn` | `rejected` | `invalid_transition` \| `term_required` \| `already_paid` \| `payment_waived` \| `payment_not_required` \| `request_cancelled` \| `request_not_found` | Checkout refused by domain rules | B1 |
 | `payment.checkout.gateway_error` | `error` | `error` | `gateway_failure` | Provider checkout failed; local row marked FAILED | B1 |
 | `payment.webhook.received` | `trace` | `success` | `null` | Verified delivery entered the pipeline (high volume; retries/replay) | B2 |
 | `payment.webhook.duplicate` | `audit` | `noop` | `duplicate_event` | Ledger short-circuit: already `PROCESSED` | B2 |
