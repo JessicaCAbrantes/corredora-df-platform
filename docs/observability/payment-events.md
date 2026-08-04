@@ -1,6 +1,6 @@
 # Payment decision events — canonical contract
 
-**Status:** Frozen contract · **3.5-B1 checkout emitters** shipping in this phase  
+**Status:** Frozen contract · **3.5-B1** checkout emitters ✅ · **3.5-B2** webhook emitters shipping  
 **Phase:** FASE 3.5-B  
 **Date:** 2026-08-04  
 
@@ -10,8 +10,8 @@ This document is the **official contract** for structured payment decision logs.
 
 | PR | Scope |
 |---|---|
-| **3.5-B1** | Checkout events only ← current |
-| **3.5-B2** | Webhook events only |
+| **3.5-B1** | Checkout events only ✅ |
+| **3.5-B2** | Webhook events only ← current |
 | **3.5-B3** | Broader tests + runbook pointer + schema enforcement notes |
 
 ---

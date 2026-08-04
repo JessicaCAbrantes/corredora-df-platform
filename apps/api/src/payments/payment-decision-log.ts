@@ -38,7 +38,22 @@ export type PaymentCheckoutEvent =
   | "payment.checkout.rejected"
   | "payment.checkout.gateway_error";
 
-export type PaymentDecisionEvent = PaymentCheckoutEvent | (string & {});
+export type PaymentWebhookEventName =
+  | "payment.webhook.received"
+  | "payment.webhook.duplicate"
+  | "payment.webhook.stale"
+  | "payment.webhook.payment_confirmed"
+  | "payment.webhook.payment_failed"
+  | "payment.webhook.retryable"
+  | "payment.webhook.acknowledged_permanent"
+  | "payment.webhook.signature_rejected"
+  | "payment.webhook.ignored_unmapped"
+  | "payment.webhook.verify_error"
+  | "payment.webhook.processing_error";
+
+export type PaymentDecisionEventName =
+  | PaymentCheckoutEvent
+  | PaymentWebhookEventName;
 
 export type PaymentDecisionPayload = {
   timestamp: string;
@@ -59,7 +74,7 @@ export type PaymentDecisionPayload = {
 
 export type PaymentDecisionLogInput = {
   environment: string;
-  event: PaymentCheckoutEvent;
+  event: PaymentDecisionEventName;
   category: PaymentDecisionCategory;
   provider: string;
   paymentId?: string | null;

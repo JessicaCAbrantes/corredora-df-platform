@@ -11,11 +11,15 @@ import { PrismaService } from "../prisma/prisma.service";
 import {
   checkoutRejectReason,
   emitPaymentDecisionLog,
+  type PaymentDecisionCategory,
+  type PaymentDecisionEventName,
   type PaymentDecisionLogSink,
   type PaymentDecisionReason,
+  type PaymentDecisionResult,
 } from "./payment-decision-log";
 import type { PaymentGateway, VerifiedPaymentEvent } from "./payment-gateway";
 import {
+  getWebhookHttpErrorCode,
   isPermanentDomainWebhookError,
   isRetryableDomainWebhookError,
 } from "./webhook-http-policy";
@@ -259,7 +263,7 @@ export class PaymentsService {
         }),
       ]);
 
-      this.emitCheckoutDecision({
+      this.emitDecision({
         event: "payment.checkout.created",
         category: "audit",
         result: "success",
@@ -279,7 +283,7 @@ export class PaymentsService {
         where: { id: paymentId },
         data: { status: KitPickupPaymentRecordStatus.FAILED },
       });
-      this.emitCheckoutDecision({
+      this.emitDecision({
         event: "payment.checkout.gateway_error",
         category: "error",
         result: "error",
@@ -341,7 +345,7 @@ export class PaymentsService {
         });
       }
 
-      this.emitCheckoutDecision({
+      this.emitDecision({
         event: "payment.checkout.reused",
         category: "audit",
         result: "success",
@@ -358,7 +362,7 @@ export class PaymentsService {
         provider: checkout.provider,
       };
     } catch (error: unknown) {
-      this.emitCheckoutDecision({
+      this.emitDecision({
         event: "payment.checkout.gateway_error",
         category: "error",
         result: "error",
@@ -373,18 +377,31 @@ export class PaymentsService {
     }
   }
 
-  private emitCheckoutDecision(params: {
-    event:
-      | "payment.checkout.created"
-      | "payment.checkout.reused"
-      | "payment.checkout.rejected"
-      | "payment.checkout.gateway_error";
-    category: "audit" | "warn" | "error";
-    result: "success" | "rejected" | "error";
+  /** Used by webhook controller for verify/signature/processing errors (FASE 3.5-B2). */
+  emitWebhookDecision(params: {
+    event: PaymentDecisionEventName;
+    category: PaymentDecisionCategory;
+    result: PaymentDecisionResult;
     paymentId?: string | null;
     requestId?: string | null;
     userId?: string | null;
     providerPaymentId?: string | null;
+    providerEventId?: string | null;
+    code?: string | null;
+    reason?: PaymentDecisionReason | null;
+  }): void {
+    this.emitDecision(params);
+  }
+
+  private emitDecision(params: {
+    event: PaymentDecisionEventName;
+    category: PaymentDecisionCategory;
+    result: PaymentDecisionResult;
+    paymentId?: string | null;
+    requestId?: string | null;
+    userId?: string | null;
+    providerPaymentId?: string | null;
+    providerEventId?: string | null;
     code?: string | null;
     reason?: PaymentDecisionReason | null;
   }): void {
@@ -398,7 +415,7 @@ export class PaymentsService {
         requestId: params.requestId,
         userId: params.userId,
         providerPaymentId: params.providerPaymentId,
-        providerEventId: null,
+        providerEventId: params.providerEventId ?? null,
         result: params.result,
         code: params.code,
         reason: params.reason,
@@ -413,7 +430,7 @@ export class PaymentsService {
     message: string,
     status: number = HttpStatus.CONFLICT,
   ): HttpException {
-    this.emitCheckoutDecision({
+    this.emitDecision({
       event: "payment.checkout.rejected",
       category: "warn",
       result: "rejected",
@@ -428,6 +445,7 @@ export class PaymentsService {
   /**
    * FASE 3.4-C1/C2 — ledger + short-circuit by (provider, eventId).
    * FASE 3.4-C4 — permanent domain codes → PROCESSED (ACK); PAYMENT_NOT_FOUND → 500 + RECEIVED.
+   * FASE 3.5-B2 — structured webhook decision logs (no HTTP/ledger/domain change).
    */
   async processVerifiedWebhook(params: {
     providerEventId: string;
@@ -442,6 +460,16 @@ export class PaymentsService {
     });
 
     if (existing?.processedAt != null) {
+      this.emitDecision({
+        event: "payment.webhook.duplicate",
+        category: "audit",
+        result: "noop",
+        providerEventId: eventId,
+        paymentId: params.event?.paymentId ?? null,
+        requestId: params.event?.kitPickupRequestId ?? null,
+        providerPaymentId: params.event?.providerPaymentId ?? null,
+        reason: "duplicate_event",
+      });
       return "duplicate";
     }
 
@@ -465,6 +493,16 @@ export class PaymentsService {
             where: { provider_eventId: { provider, eventId } },
           });
           if (raced?.processedAt != null) {
+            this.emitDecision({
+              event: "payment.webhook.duplicate",
+              category: "audit",
+              result: "noop",
+              providerEventId: eventId,
+              paymentId: params.event?.paymentId ?? null,
+              requestId: params.event?.kitPickupRequestId ?? null,
+              providerPaymentId: params.event?.providerPaymentId ?? null,
+              reason: "duplicate_event",
+            });
             return "duplicate";
           }
           // RECEIVED but not processed — allow domain retry after a crash.
@@ -474,13 +512,46 @@ export class PaymentsService {
       }
     }
 
+    // TRACE — omit on duplicate replay (acceptance: replay → only duplicate).
+    this.emitDecision({
+      event: "payment.webhook.received",
+      category: "trace",
+      result: "success",
+      providerEventId: eventId,
+      paymentId: params.event?.paymentId ?? null,
+      requestId: params.event?.kitPickupRequestId ?? null,
+      providerPaymentId: params.event?.providerPaymentId ?? null,
+    });
+
     if (params.event) {
       try {
-        await this.handleVerifiedEvent(params.event);
+        await this.handleVerifiedEvent(params.event, eventId);
       } catch (error: unknown) {
         if (isPermanentDomainWebhookError(error)) {
+          this.emitDecision({
+            event: "payment.webhook.acknowledged_permanent",
+            category: "audit",
+            result: "noop",
+            providerEventId: eventId,
+            paymentId: params.event.paymentId,
+            requestId: params.event.kitPickupRequestId,
+            providerPaymentId: params.event.providerPaymentId,
+            code: getWebhookHttpErrorCode(error),
+            reason: "permanent_domain_conflict",
+          });
           // Explicit allowlist only — mark PROCESSED and ACK (no domain change).
         } else if (isRetryableDomainWebhookError(error)) {
+          this.emitDecision({
+            event: "payment.webhook.retryable",
+            category: "warn",
+            result: "rejected",
+            providerEventId: eventId,
+            paymentId: params.event.paymentId,
+            requestId: params.event.kitPickupRequestId,
+            providerPaymentId: params.event.providerPaymentId,
+            code: "PAYMENT_NOT_FOUND",
+            reason: "payment_not_found",
+          });
           // Leave RECEIVED; surface as 500 so the provider retries (FASE 3.4-C4).
           throw this.error(
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -492,6 +563,14 @@ export class PaymentsService {
           throw error;
         }
       }
+    } else {
+      this.emitDecision({
+        event: "payment.webhook.ignored_unmapped",
+        category: "audit",
+        result: "noop",
+        providerEventId: eventId,
+        reason: "ignored_unmapped",
+      });
     }
 
     await this.prisma.paymentWebhookEvent.update({
@@ -505,16 +584,22 @@ export class PaymentsService {
     return "applied";
   }
 
-  async handleVerifiedEvent(event: VerifiedPaymentEvent): Promise<void> {
+  async handleVerifiedEvent(
+    event: VerifiedPaymentEvent,
+    providerEventId: string = "evt_direct",
+  ): Promise<void> {
     if (event.type === "payment.failed") {
-      await this.markFailed(event);
+      await this.markFailed(event, providerEventId);
       return;
     }
 
-    await this.markPaid(event);
+    await this.markPaid(event, providerEventId);
   }
 
-  private async markPaid(event: Extract<VerifiedPaymentEvent, { type: "payment.paid" }>) {
+  private async markPaid(
+    event: Extract<VerifiedPaymentEvent, { type: "payment.paid" }>,
+    providerEventId: string,
+  ) {
     const payment = await this.prisma.kitPickupPayment.findUnique({
       where: { providerPaymentId: event.providerPaymentId },
       include: { request: true },
@@ -529,10 +614,10 @@ export class PaymentsService {
       if (!byId) {
         throw this.error(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Pagamento não encontrado.");
       }
-      return this.applyPaid(byId, event);
+      return this.applyPaid(byId, event, providerEventId);
     }
 
-    return this.applyPaid(payment, event);
+    return this.applyPaid(payment, event, providerEventId);
   }
 
   private async applyPaid(
@@ -546,9 +631,20 @@ export class PaymentsService {
       request: { id: string; status: KitPickupRequestStatus };
     },
     event: Extract<VerifiedPaymentEvent, { type: "payment.paid" }>,
+    providerEventId: string,
   ): Promise<void> {
     // FASE 3.4-C3-B: stale checkout — no domain write; caller still marks ledger PROCESSED.
     if (!isCurrentProviderSession(payment.providerPaymentId, event.providerPaymentId)) {
+      this.emitDecision({
+        event: "payment.webhook.stale",
+        category: "warn",
+        result: "noop",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "stale_session",
+      });
       return;
     }
 
@@ -594,6 +690,16 @@ export class PaymentsService {
         payment.request.status === KitPickupRequestStatus.READY_FOR_HANDOVER ||
         payment.request.status === KitPickupRequestStatus.DELIVERED)
     ) {
+      this.emitDecision({
+        event: "payment.webhook.payment_confirmed",
+        category: "audit",
+        result: "noop",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "already_processed",
+      });
       return;
     }
 
@@ -606,6 +712,9 @@ export class PaymentsService {
     }
 
     // FASE 3.4-C3-A: conditional transitions (PENDING|FAILED → PAID). Never clobber CANCELLED.
+    const outcome: { value: "confirmed" | "crash_recovery" | "noop" } = {
+      value: "noop",
+    };
     await this.prisma.$transaction(async (tx) => {
       const paymentUpdate = await tx.kitPickupPayment.updateMany({
         where: {
@@ -645,6 +754,7 @@ export class PaymentsService {
               paymentStatus: KitPickupPaymentStatus.PAID,
             },
           });
+          outcome.value = "crash_recovery";
         }
         return;
       }
@@ -665,11 +775,36 @@ export class PaymentsService {
           paymentStatus: KitPickupPaymentStatus.PAID,
         },
       });
+      outcome.value = "confirmed";
     });
+
+    if (outcome.value === "confirmed") {
+      this.emitDecision({
+        event: "payment.webhook.payment_confirmed",
+        category: "audit",
+        result: "success",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+      });
+    } else if (outcome.value === "crash_recovery") {
+      this.emitDecision({
+        event: "payment.webhook.payment_confirmed",
+        category: "audit",
+        result: "noop",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "crash_recovery",
+      });
+    }
   }
 
   private async markFailed(
     event: Extract<VerifiedPaymentEvent, { type: "payment.failed" }>,
+    providerEventId: string,
   ): Promise<void> {
     const payment =
       (await this.prisma.kitPickupPayment.findUnique({
@@ -685,10 +820,30 @@ export class PaymentsService {
 
     // FASE 3.4-C3-B: stale checkout — ignore domain.
     if (!isCurrentProviderSession(payment.providerPaymentId, event.providerPaymentId)) {
+      this.emitDecision({
+        event: "payment.webhook.stale",
+        category: "warn",
+        result: "noop",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "stale_session",
+      });
       return;
     }
 
     if (payment.status === KitPickupPaymentRecordStatus.PAID) {
+      this.emitDecision({
+        event: "payment.webhook.payment_failed",
+        category: "audit",
+        result: "noop",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "already_processed",
+      });
       return;
     }
 
@@ -701,6 +856,7 @@ export class PaymentsService {
     }
 
     // FASE 3.4-C3-A: FAILED only from PENDING — never overwrite PAID.
+    let applied = false;
     await this.prisma.$transaction(async (tx) => {
       const paymentUpdate = await tx.kitPickupPayment.updateMany({
         where: {
@@ -721,7 +877,32 @@ export class PaymentsService {
         },
         data: { paymentStatus: KitPickupPaymentStatus.FAILED },
       });
+      applied = true;
     });
+
+    if (applied) {
+      this.emitDecision({
+        event: "payment.webhook.payment_failed",
+        category: "audit",
+        result: "success",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "declined",
+      });
+    } else {
+      this.emitDecision({
+        event: "payment.webhook.payment_failed",
+        category: "audit",
+        result: "noop",
+        providerEventId,
+        paymentId: payment.id,
+        requestId: payment.kitPickupRequestId,
+        providerPaymentId: event.providerPaymentId,
+        reason: "already_processed",
+      });
+    }
   }
 
   private error(status: number, code: string, message: string): HttpException {
