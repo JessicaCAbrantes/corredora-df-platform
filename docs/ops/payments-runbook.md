@@ -2,7 +2,7 @@
 
 Operational procedures for kit-pickup payments in Corredora DF Platform.
 
-> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Loki/Datadog/Grafana alerting). Structured **payment decision logs** (FASE 3.5-B) and **correlation IDs** (FASE 3.5-C, header `x-correlation-id`) **are** available — see [§10.5](#105-decision-logs-fase-35-b) and [correlation.md](../observability/correlation.md).
+> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Loki/Datadog/Grafana alerting). Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C, header `x-correlation-id`), and **process-local payment counters** (FASE 3.5-D1 Metrics Contract v1.0) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [correlation.md](../observability/correlation.md), and [payment-metrics.md](../observability/payment-metrics.md).
 
 ## 1. Objective and limits
 
@@ -19,8 +19,7 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 
 - Implementing dual/previous secrets in code
 - Redis, message queues, workers, Kafka, Outbox
-- Observability **platforms** (metrics exporters, log shipping, dashboards, alerting) — FASE 3.5-C+ / later
-- Correlation / request IDs — FASE 3.5-C
+- Observability **platforms** (Prometheus scrape, log shipping, dashboards, alerting) — FASE 3.5-D2/D3+
 - Docker/Kubernetes production deploy — FASE 3.6+
 - Changing payment domain logic, checkout, or HTTP contract (already C1–C4)
 - Routine SQL that forces `PROCESSED` / `PAID` (not a normal procedure)
@@ -30,6 +29,8 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 - Env / fail-closed: [`docs/setup/environment.md`](../setup/environment.md)
 - Webhook ledger / concurrency / HTTP matrix: [`docs/api/kit-pickup-requests.md`](../api/kit-pickup-requests.md)
 - Payment decision events (canonical): [`docs/observability/payment-events.md`](../observability/payment-events.md)
+- Payment metrics (canonical v1.0): [`docs/observability/payment-metrics.md`](../observability/payment-metrics.md)
+- Correlation: [`docs/observability/correlation.md`](../observability/correlation.md)
 - DB seed / backup / checklist: [`docs/database/`](../database/)
 
 ---
@@ -220,6 +221,7 @@ Canonical catalog + JSON schema: [`docs/observability/payment-events.md`](../obs
 | Format | One JSON object per line on process **stdout** (`console.info` / `warn` / `error` / `debug` mapped from `category`) |
 | Filter key | Field `event` (e.g. `payment.webhook.payment_confirmed`) |
 | Correlation | Field `correlationId` — see [correlation.md](../observability/correlation.md); header `x-correlation-id` |
+| Metrics (v1.0) | Process-local counters via `emitPaymentDecisionLog` — [payment-metrics.md](../observability/payment-metrics.md); **no** scrape/dashboard yet |
 
 There is **no** dedicated log shipper or dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
 

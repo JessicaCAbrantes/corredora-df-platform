@@ -1,8 +1,10 @@
 /**
  * FASE 3.5-B — Payment decision structured logs.
  * Canonical contract: docs/observability/payment-events.md (v1.1 adds correlationId)
+ * Metrics (3.5-D1): emit also records counters — docs/observability/payment-metrics.md
  */
 import { getCorrelationId } from "../observability/correlation-context";
+import { recordPaymentDecisionMetric } from "./payment-metrics";
 
 export type PaymentDecisionCategory = "trace" | "audit" | "warn" | "error";
 
@@ -236,6 +238,12 @@ export function emitPaymentDecisionLog(
 ): PaymentDecisionPayload {
   const payload = buildPaymentDecisionPayload(input);
   sink(payload);
+  // Best-effort: metrics must never break the payment path.
+  try {
+    recordPaymentDecisionMetric(payload);
+  } catch {
+    // Swallow — registry/mapping failures are observability-only.
+  }
   return payload;
 }
 

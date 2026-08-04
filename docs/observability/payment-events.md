@@ -17,7 +17,9 @@ This is the **official contract** for structured payment decision logs. Dashboar
 | **3.5-B3** | Canonical docs + runbook + contract tests (v1.0) | ✅ |
 | **3.5-C** | Additive `correlationId` (v1.1) | ✅ (this phase) |
 
-**Not in 3.5-C:** OpenTelemetry, Prometheus, Grafana, Loki, alerting, metrics.
+**Not in 3.5-C:** OpenTelemetry, Grafana, Loki, alerting dashboards.
+
+**Related (3.5-D1):** process-local counters derived from these events — [payment-metrics.md](./payment-metrics.md) (Metrics Contract v1.0). Not a hosted metrics stack.
 
 ---
 
