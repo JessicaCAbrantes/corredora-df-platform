@@ -6,11 +6,15 @@ import { AppModule } from "./app.module";
 import type { Env } from "./config/env.validation";
 import { UnhandledExceptionFilter } from "./filters/unhandled-exception.filter";
 import { ValidationExceptionFilter } from "./filters/validation-exception.filter";
+import { correlationIdMiddleware } from "./observability/correlation-middleware";
 
 async function bootstrap() {
   // rawBody required for Stripe / mock webhook signature verification
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService<Env, true>);
+
+  // FASE 3.5-C — one correlationId per HTTP request (before other middleware).
+  app.use(correlationIdMiddleware);
 
   // Baseline security headers. CSP disabled — default Helmet CSP would block
   // inline scripts in the mock checkout HTML page (MVP).

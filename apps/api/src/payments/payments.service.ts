@@ -23,6 +23,7 @@ import {
   isPermanentDomainWebhookError,
   isRetryableDomainWebhookError,
 } from "./webhook-http-policy";
+import { getCorrelationId } from "../observability/correlation-context";
 
 export type PaymentsServiceOptions = {
   environment?: string;
@@ -244,6 +245,7 @@ export class PaymentsService {
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
+        correlationId: getCorrelationId(),
       });
 
       await this.prisma.$transaction([
@@ -325,6 +327,7 @@ export class PaymentsService {
         successUrl: params.successUrl,
         cancelUrl: params.cancelUrl,
         customerEmail: params.customerEmail,
+        correlationId: getCorrelationId(),
       });
 
       await this.prisma.kitPickupPayment.update({

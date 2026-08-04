@@ -37,6 +37,9 @@ export class MockPaymentGateway implements PaymentGateway {
     checkoutUrl.searchParams.set("currency", input.currency);
     checkoutUrl.searchParams.set("successUrl", input.successUrl);
     checkoutUrl.searchParams.set("cancelUrl", input.cancelUrl);
+    if (input.correlationId) {
+      checkoutUrl.searchParams.set("correlationId", input.correlationId);
+    }
     return {
       provider: this.provider,
       providerPaymentId,
@@ -74,6 +77,7 @@ export class MockPaymentGateway implements PaymentGateway {
       return {
         providerEventId: `mock_evt_${createHash("sha256").update(params.rawBody).digest("hex")}`,
         event: null,
+        correlationId: null,
       };
     }
 
@@ -81,15 +85,20 @@ export class MockPaymentGateway implements PaymentGateway {
       return {
         providerEventId: `mock_evt_${createHash("sha256").update(params.rawBody).digest("hex")}`,
         event: null,
+        correlationId: null,
       };
     }
 
     const body = parsed as Record<string, unknown>;
     const providerEventId = resolveMockProviderEventId(body, params.rawBody);
+    const correlationId =
+      typeof body.correlationId === "string" && body.correlationId.trim() !== ""
+        ? body.correlationId.trim()
+        : null;
 
     const type = body.type;
     if (type !== "payment.paid" && type !== "payment.failed") {
-      return { providerEventId, event: null };
+      return { providerEventId, event: null, correlationId };
     }
 
     const providerPaymentId =
@@ -99,12 +108,13 @@ export class MockPaymentGateway implements PaymentGateway {
       typeof body.kitPickupRequestId === "string" ? body.kitPickupRequestId : "";
 
     if (!providerPaymentId || !paymentId || !kitPickupRequestId) {
-      return { providerEventId, event: null };
+      return { providerEventId, event: null, correlationId };
     }
 
     if (type === "payment.failed") {
       return {
         providerEventId,
+        correlationId,
         event: {
           type: "payment.failed",
           provider: this.provider,
@@ -118,11 +128,12 @@ export class MockPaymentGateway implements PaymentGateway {
     const amount = typeof body.amount === "string" ? body.amount : "";
     const currency = typeof body.currency === "string" ? body.currency : "";
     if (!amount || !currency) {
-      return { providerEventId, event: null };
+      return { providerEventId, event: null, correlationId };
     }
 
     return {
       providerEventId,
+      correlationId,
       event: {
         type: "payment.paid",
         provider: this.provider,
@@ -142,12 +153,16 @@ export class MockPaymentGateway implements PaymentGateway {
     kitPickupRequestId: string;
     amount: string;
     currency: string;
+    correlationId?: string;
     /** Optional stable event id for tests; otherwise derived from body hash. */
     eventId?: string;
   }): { body: string; signature: string } {
     const body = JSON.stringify({
       type: "payment.paid",
       ...(payload.eventId ? { eventId: payload.eventId } : {}),
+      ...(payload.correlationId
+        ? { correlationId: payload.correlationId }
+        : {}),
       paymentId: payload.paymentId,
       providerPaymentId: payload.providerPaymentId,
       kitPickupRequestId: payload.kitPickupRequestId,

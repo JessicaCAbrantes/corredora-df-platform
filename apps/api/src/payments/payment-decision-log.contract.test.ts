@@ -15,6 +15,7 @@ import {
   PAYMENT_DECISION_RESULTS,
   type PaymentDecisionPayload,
 } from "./payment-decision-log";
+import { runWithCorrelationId } from "../observability/correlation-context";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -74,7 +75,7 @@ async function main(): Promise<void> {
   assert(PAYMENT_DECISION_CATEGORIES.length === 4, "category enum size");
   assert(PAYMENT_DECISION_REASONS.length === 23, "reason enum size");
   assert(PAYMENT_DECISION_EVENT_NAMES.length === 15, "event catalog size");
-  assert(PAYMENT_DECISION_PAYLOAD_KEYS.length === 14, "schema field count");
+  assert(PAYMENT_DECISION_PAYLOAD_KEYS.length === 15, "schema field count");
 
   // --- builder: exact success checkout payload ---
   {
@@ -109,6 +110,7 @@ async function main(): Promise<void> {
       userId: "usr_1",
       providerPaymentId: "mock_pay_1",
       providerEventId: null,
+      correlationId: null,
       result: "success",
       code: null,
       reason: null,
@@ -148,6 +150,7 @@ async function main(): Promise<void> {
       userId: null,
       providerPaymentId: "cs_2",
       providerEventId: "evt_2",
+      correlationId: null,
       result: "noop",
       code: null,
       reason: "duplicate_event",
@@ -188,6 +191,21 @@ async function main(): Promise<void> {
   assert(checkoutRejectReason("NOT_FOUND") === "request_not_found", "not found");
   assert(checkoutRejectReason("INVALID_STATUS") === "invalid_transition", "invalid");
   assert(checkoutRejectReason("UNKNOWN_X") === "invalid_transition", "fallback");
+
+  // --- correlationId from ALS (v1.1) ---
+  {
+    let payload!: PaymentDecisionPayload;
+    runWithCorrelationId("corr-contract-1", () => {
+      payload = buildPaymentDecisionPayload({
+        environment: "test",
+        event: "payment.checkout.created",
+        category: "audit",
+        provider: "mock",
+        result: "success",
+      });
+    });
+    assert(payload.correlationId === "corr-contract-1", "ALS correlationId");
+  }
 
   // --- forbidden keys never present (leak protection) ---
   {

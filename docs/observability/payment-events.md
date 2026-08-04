@@ -1,11 +1,12 @@
 # Payment Events Contract
 
 **Status:** Stable  
-**Version:** 1.0  
-**Phase:** FASE 3.5-B3 (contract freeze)  
+**Version:** 1.1  
+**Phase:** FASE 3.5-B3 freeze + **3.5-C** additive `correlationId`  
 **Date:** 2026-08-04  
 **Source of truth:** this file · runtime helper: `apps/api/src/payments/payment-decision-log.ts`  
-**Ops how-to:** [payments-runbook.md § Decision logs](../ops/payments-runbook.md#105-decision-logs-fase-35-b)
+**Ops how-to:** [payments-runbook.md § Decision logs](../ops/payments-runbook.md#105-decision-logs-fase-35-b)  
+**Correlation:** [correlation.md](./correlation.md)
 
 This is the **official contract** for structured payment decision logs. Dashboards, alerts, and runbooks must use these event names, categories, and field enums. Renaming after consumers depend on them is expensive — change only via an explicit contract revision (same PR that updates emitters + tests).
 
@@ -13,19 +14,20 @@ This is the **official contract** for structured payment decision logs. Dashboar
 |---|---|---|
 | **3.5-B1** | Checkout emitters | ✅ |
 | **3.5-B2** | Webhook emitters | ✅ |
-| **3.5-B3** | Canonical docs + runbook + contract tests | ✅ (this phase) |
+| **3.5-B3** | Canonical docs + runbook + contract tests (v1.0) | ✅ |
+| **3.5-C** | Additive `correlationId` (v1.1) | ✅ (this phase) |
 
-**Not in 3.5-B:** correlation / request IDs, OpenTelemetry, Prometheus, dashboards, alerting, logger framework refactor.
+**Not in 3.5-C:** OpenTelemetry, Prometheus, Grafana, Loki, alerting, metrics.
 
 ---
 
 ## Versioning
 
-This catalog is considered **stable** as of FASE 3.5-B3 (`Version 1.0`).
+This catalog was **stable at v1.0** as of FASE 3.5-B3. **v1.1** (FASE 3.5-C) adds required field `correlationId` (additive).
 
 | Change type | How to treat it |
 |---|---|
-| Additive (new optional `reason` / new event with docs + tests) | Contract revision; document in this file; bump minor when useful (`1.1`, …) |
+| Additive (new optional `reason` / new event / new field with docs + tests) | Contract revision; document in this file; bump minor (`1.1`, …) |
 | Incompatible (rename event, remove/rename field, change enum meaning) | **Breaking contract change** — must be explicit in the PR, update this file + emitters + contract tests, and bump major (`2.0`) |
 
 Do not silently rename events or reshape the JSON schema after consumers (dashboards/alerts) depend on them.
@@ -69,6 +71,7 @@ Every line **must** include exactly these fields (use `null` when not applicable
   "userId": null,
   "providerPaymentId": "cs_…",
   "providerEventId": "evt_…",
+  "correlationId": "550e8400-e29b-41d4-a716-446655440000",
   "result": "success",
   "code": null,
   "reason": null
@@ -86,10 +89,11 @@ Every line **must** include exactly these fields (use `null` when not applicable
 | `category` | `trace` \| `audit` \| `warn` \| `error` |
 | `provider` | `stripe` \| `mock` (current gateways) |
 | `paymentId` | Internal id or `null` |
-| `requestId` | Kit pickup request id or `null` |
+| `requestId` | Kit pickup request id or `null` (**not** HTTP request id) |
 | `userId` | Authenticated participant id or `null` (webhooks: usually `null`) |
 | `providerPaymentId` | Gateway session/payment id or `null` |
 | `providerEventId` | Provider `event.id` (or mock synthetic) or `null` |
+| `correlationId` | Request correlation id (FASE 3.5-C) or `null` if no ALS context |
 | `result` | Closed enum — see below |
 | `code` | Closed domain/security code or `null` — **never** a human message |
 | `reason` | Closed constant or `null` — **never** free text |

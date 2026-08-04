@@ -1,7 +1,8 @@
 /**
  * FASE 3.5-B — Payment decision structured logs.
- * Canonical contract: docs/observability/payment-events.md
+ * Canonical contract: docs/observability/payment-events.md (v1.1 adds correlationId)
  */
+import { getCorrelationId } from "../observability/correlation-context";
 
 export type PaymentDecisionCategory = "trace" | "audit" | "warn" | "error";
 
@@ -55,7 +56,7 @@ export type PaymentDecisionEventName =
   | PaymentCheckoutEvent
   | PaymentWebhookEventName;
 
-/** Frozen key set — must match docs/observability/payment-events.md */
+/** Contract keys — must match docs/observability/payment-events.md (v1.1+) */
 export const PAYMENT_DECISION_PAYLOAD_KEYS = [
   "timestamp",
   "service",
@@ -68,6 +69,7 @@ export const PAYMENT_DECISION_PAYLOAD_KEYS = [
   "userId",
   "providerPaymentId",
   "providerEventId",
+  "correlationId",
   "result",
   "code",
   "reason",
@@ -159,6 +161,7 @@ export type PaymentDecisionPayload = {
   userId: string | null;
   providerPaymentId: string | null;
   providerEventId: string | null;
+  correlationId: string | null;
   result: PaymentDecisionResult;
   code: string | null;
   reason: PaymentDecisionReason | null;
@@ -174,6 +177,7 @@ export type PaymentDecisionLogInput = {
   userId?: string | null;
   providerPaymentId?: string | null;
   providerEventId?: string | null;
+  correlationId?: string | null;
   result: PaymentDecisionResult;
   code?: string | null;
   reason?: PaymentDecisionReason | null;
@@ -207,6 +211,10 @@ export function buildPaymentDecisionPayload(
     userId: input.userId ?? null,
     providerPaymentId: input.providerPaymentId ?? null,
     providerEventId: input.providerEventId ?? null,
+    correlationId:
+      input.correlationId !== undefined
+        ? input.correlationId
+        : (getCorrelationId() ?? null),
     result: input.result,
     code: input.code ?? null,
     reason: input.reason ?? null,
