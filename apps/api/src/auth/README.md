@@ -49,6 +49,9 @@ AUTH_SECRET=<long random string>   # required; boot fails if missing/blank
 2. Replace `AUTH_SECRET` with a long random value (never commit `.env`).
 3. Generate locally: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`
 4. Restart the API after changing the secret (existing cookies become invalid).
+
+**Production rotation (hard cutover, mass re-login):** [`docs/ops/payments-runbook.md`](../../../../docs/ops/payments-runbook.md) §5.
+
 ## Login brute-force protection
 
 | Setting | Value |

@@ -117,6 +117,8 @@ Stripe reenvia qualquer **non-2xx**. Classificação explícita (não engolir to
 
 `PAYMENT_NOT_FOUND` permanece retryable nesta fase (possível race create↔webhook). Schema do ledger inalterado (`RECEIVED` → `PROCESSED` apenas).
 
+**Ops / troubleshooting / rotação de secrets:** [payments-runbook.md](../ops/payments-runbook.md) (FASE 3.4-D).
+
 ## Gateway
 
 | `PAYMENT_PROVIDER` | Uso |

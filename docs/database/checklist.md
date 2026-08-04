@@ -17,6 +17,7 @@ Operational checklist for database changes and deployments (FASE 3.3-C).
 - [ ] `/health/ready` → 200
 - [ ] Smoke: login + one authenticated read path
 - [ ] Confirm no accidental seed in deploy logs
+- [ ] Payments (if this deploy touches API secrets / Stripe): see [payments-runbook.md](../ops/payments-runbook.md) smoke §10
 
 ## Migration review (always)
 
@@ -29,3 +30,4 @@ Operational checklist for database changes and deployments (FASE 3.3-C).
 - [seeding.md](./seeding.md)
 - [backup.md](./backup.md)
 - [README.md](./README.md)
+- [Payments runbook](../ops/payments-runbook.md)

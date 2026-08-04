@@ -25,6 +25,7 @@ Documentação do banco de dados da plataforma Corredora DF.
 | [backup.md](./backup.md) | `pg_dump` / restore + backups gerenciados (3.3-C) |
 | [checklist.md](./checklist.md) | Checklist pré/pós deploy e review de migrations (3.3-C) |
 | [fase-3.3-d-deferred.md](./fase-3.3-d-deferred.md) | 3.3-D: CHECKs/índices **deferred** (decisão consciente) |
+| [Payments runbook](../ops/payments-runbook.md) | Rotação de secrets de pagamento / troubleshooting (3.4-D) |
 
 ## Convenções
 
