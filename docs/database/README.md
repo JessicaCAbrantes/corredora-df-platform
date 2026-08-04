@@ -88,7 +88,7 @@ Ver [checklist.md](./checklist.md). Em resumo: **não** `DROP` o índice parcial
 
 ## Roadmap
 
-- Payments hardening → **FASE 3.4**
-- Observability → **FASE 3.5**
+- Payments hardening → **FASE 3.4** ✅ (fail-closed, ledger, concurrency, HTTP retry, runbooks)
+- Observability / reliability → **FASE 3.5** (próxima)
 - Containers → **FASE 3.6**
 - Deploy / CD → **FASE 3.7 / 3.8**

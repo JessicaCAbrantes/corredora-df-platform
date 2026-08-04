@@ -506,8 +506,8 @@ Sem inscrições: `{ "data": [] }` com `200`.
 
 ### Known Debt (não resolvido neste MVP)
 
-- `EventRegistration.userId` sem FK para `User.id`
-- fixtures históricas `user_mock_01`
+- `EventRegistration.userId` → `User.id` com FK (`ON DELETE RESTRICT`) — entregue na FASE 3.3-A
+- fixtures históricas `user_mock_01` (se ainda existirem em DBs antigos; seeds atuais usam ids determinísticos)
 - endpoint aspiracional `GET /users/me/registrations` (não implementar — ver `docs/api/users.md`)
 - ausência de paginação
 - soft delete / auditoria de cancelamento (MVP usa hard delete)
