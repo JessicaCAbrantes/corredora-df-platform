@@ -102,7 +102,7 @@ Validated in [`apps/api/src/config/env.validation.ts`](../../apps/api/src/config
 | Staging (planned) | `production` (or staging equivalent treated as prod) | `stripe` | Required | No mock |
 | Production | `production` | `stripe` | Required | No mock |
 
-Idempotency by webhook `event.id` (ledger) is implemented in FASE 3.4-C1/C2. Concurrency hardening (conditional updates, stale checkout, one PENDING payment) is FASE 3.4-C3. HTTP retry policy remains for 3.4-C4. Ops runbooks are 3.4-D.
+Idempotency by webhook `event.id` (ledger) is implemented in FASE 3.4-C1/C2. Concurrency hardening (conditional updates, stale checkout, one PENDING payment) is FASE 3.4-C3. HTTP retry policy (signature→401; permanent allowlist→200+PROCESSED; `PAYMENT_NOT_FOUND`/transient→500+RECEIVED) is FASE 3.4-C4. Ops runbooks are 3.4-D.
 
 ---
 

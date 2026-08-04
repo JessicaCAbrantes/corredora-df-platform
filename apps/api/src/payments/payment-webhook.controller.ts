@@ -14,6 +14,7 @@ import {
 import type { Request, Response } from "express";
 import { MockPaymentGateway } from "./mock-payment-gateway";
 import { PaymentsService } from "./payments.service";
+import { isSignatureVerifyError } from "./webhook-http-policy";
 
 function getRawBody(request: Request): Buffer {
   const raw = (request as Request & { rawBody?: Buffer }).rawBody;
@@ -36,6 +37,8 @@ export class PaymentWebhookController {
   /**
    * Gateway webhook — authenticated by provider signature, not user session.
    * Idempotency: UNIQUE(provider, event_id) ledger short-circuit (FASE 3.4-C1/C2).
+   * HTTP retry contract (FASE 3.4-C4): 401 signature only; permanent → 200+PROCESSED;
+   * PAYMENT_NOT_FOUND / transient → 500+RECEIVED.
    */
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
@@ -57,13 +60,24 @@ export class PaymentWebhookController {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "INVALID_SIGNATURE";
-      const code =
-        message === "MISSING_SIGNATURE" ? "MISSING_SIGNATURE" : "INVALID_SIGNATURE";
+      if (!isSignatureVerifyError(message)) {
+        throw new HttpException(
+          {
+            status: "error",
+            error: {
+              code: "WEBHOOK_VERIFY_ERROR",
+              message: "Falha ao verificar webhook.",
+              status: 500,
+            },
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
       throw new HttpException(
         {
           status: "error",
           error: {
-            code,
+            code: message,
             message: "Assinatura de webhook inválida.",
             status: 401,
           },

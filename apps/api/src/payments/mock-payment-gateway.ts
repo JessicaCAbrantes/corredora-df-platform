@@ -70,11 +70,18 @@ export class MockPaymentGateway implements PaymentGateway {
     try {
       parsed = JSON.parse(params.rawBody.toString("utf8"));
     } catch {
-      throw new Error("INVALID_PAYLOAD");
+      // Signature already verified — unprocessable body is a permanent ignore.
+      return {
+        providerEventId: `mock_evt_${createHash("sha256").update(params.rawBody).digest("hex")}`,
+        event: null,
+      };
     }
 
     if (!parsed || typeof parsed !== "object") {
-      throw new Error("INVALID_PAYLOAD");
+      return {
+        providerEventId: `mock_evt_${createHash("sha256").update(params.rawBody).digest("hex")}`,
+        event: null,
+      };
     }
 
     const body = parsed as Record<string, unknown>;
@@ -92,7 +99,7 @@ export class MockPaymentGateway implements PaymentGateway {
       typeof body.kitPickupRequestId === "string" ? body.kitPickupRequestId : "";
 
     if (!providerPaymentId || !paymentId || !kitPickupRequestId) {
-      throw new Error("INVALID_PAYLOAD");
+      return { providerEventId, event: null };
     }
 
     if (type === "payment.failed") {
@@ -111,7 +118,7 @@ export class MockPaymentGateway implements PaymentGateway {
     const amount = typeof body.amount === "string" ? body.amount : "";
     const currency = typeof body.currency === "string" ? body.currency : "";
     if (!amount || !currency) {
-      throw new Error("INVALID_PAYLOAD");
+      return { providerEventId, event: null };
     }
 
     return {

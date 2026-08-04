@@ -105,7 +105,17 @@ Idempotência primária = ledger por `event.id`. Soft-idempotência por estado d
 | Checkout stale | `providerPaymentId` ≠ sessão atual → no-op de domínio; ledger ainda `PROCESSED` |
 | Um PENDING por request | partial unique `kit_pickup_payments_pending_request_uidx`; P2002 → reuse |
 
-**Fora deste PR:** contrato HTTP permanente→2xx (3.4-C4).
+### Contrato HTTP / retries (FASE 3.4-C4)
+
+Stripe reenvia qualquer **non-2xx**. Classificação explícita (não engolir todo 4xx):
+
+| Classe | Exemplos | HTTP | Ledger |
+|---|---|---|---|
+| Segurança | `MISSING_SIGNATURE`, `INVALID_SIGNATURE` | **401** | nenhum |
+| Permanente (allowlist) | `AMOUNT_MISMATCH`, `REQUEST_CANCELLED`, evento não mapeado, payload autenticado inválido | **200** | **PROCESSED** |
+| Transitório / retry | DB, crash, **`PAYMENT_NOT_FOUND`** (MVP) | **500** | **RECEIVED** |
+
+`PAYMENT_NOT_FOUND` permanece retryable nesta fase (possível race create↔webhook). Schema do ledger inalterado (`RECEIVED` → `PROCESSED` apenas).
 
 ## Gateway
 
