@@ -9,6 +9,7 @@ import {
   emitPaymentDecisionLog,
   PAYMENT_DECISION_CATEGORIES,
   PAYMENT_DECISION_EVENT_NAMES,
+  PAYMENT_DECISION_FORBIDDEN_KEYS,
   PAYMENT_DECISION_PAYLOAD_KEYS,
   PAYMENT_DECISION_REASONS,
   PAYMENT_DECISION_RESULTS,
@@ -18,6 +19,15 @@ import {
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
     throw new Error(message);
+  }
+}
+
+function assertNoForbiddenProperties(payload: PaymentDecisionPayload): void {
+  for (const key of PAYMENT_DECISION_FORBIDDEN_KEYS) {
+    assert(
+      !Object.prototype.hasOwnProperty.call(payload, key),
+      `payload must not have property ${key}`,
+    );
   }
 }
 
@@ -51,19 +61,7 @@ function assertExactPayload(
     );
   }
 
-  const forbidden = [
-    "rawBody",
-    "signature",
-    "payloadHash",
-    "customerEmail",
-    "successUrl",
-    "cancelUrl",
-    "stack",
-    "password",
-  ];
-  for (const key of forbidden) {
-    assert(!(key in payload), `forbidden field ${key}`);
-  }
+  assertNoForbiddenProperties(payload);
 
   const raw = JSON.stringify(payload);
   assert(!raw.includes("whsec_"), "no whsec");
