@@ -134,6 +134,8 @@ Variáveis relacionadas (`PAYMENT_*`, `STRIPE_*`, `PUBLIC_API_BASE_URL`): [setup
 - `/kits` = My Kits (`GET /events/me/kits`)
 - Sem `EventRegistration` artificial no modo external
 
-## Known Debt (Fase 2.1+)
+## Known Debt (pós FASE 2.1 / 3.x)
 
-confirm-payment operacional · pickup · custody · handover · delivery · RBAC · refund · QR/OTP · CPF/docs · notificações
+Já entregue (não listar como aberto): pickup · custody · handover · delivery (ops 2.1); FKs User (3.3); payments ledger / concurrency / HTTP contract / runbooks (3.4).
+
+Ainda aberto: confirm-payment operacional · RBAC · refund · QR/OTP · CPF/docs · notificações · reconciliação automática Stripe↔DB

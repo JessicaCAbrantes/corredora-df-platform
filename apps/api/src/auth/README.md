@@ -101,7 +101,6 @@ HTTP request
 1. Logout clears cookie only — does not revoke already-issued tokens
 2. No refresh token
 3. In-memory login limiter is not distributed (pré-produção limitation)
-4. `EventRegistration.userId` has no FK to `User.id`
-5. Historical registrations for `user_mock_01` remain in DB
-6. No public register / profile / forgot-password (Logout UI is implemented on the web navbar)
-7. `docs/api/auth.md` still lists aspirational endpoints beyond this MVP
+4. Historical registrations for `user_mock_01` may remain in old DBs (current seed uses deterministic ids; `EventRegistration.userId` has FK to `User` since FASE 3.3-A)
+5. No public register / profile / forgot-password (Logout UI is implemented on the web navbar)
+6. `docs/api/auth.md` still lists aspirational endpoints beyond this MVP
