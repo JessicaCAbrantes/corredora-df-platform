@@ -191,6 +191,23 @@ async function main(): Promise<void> {
   assert(checkoutRejectReason("INVALID_STATUS") === "invalid_transition", "invalid");
   assert(checkoutRejectReason("UNKNOWN_X") === "invalid_transition", "fallback");
 
+  // --- forbidden keys never present (leak protection) ---
+  {
+    const payload = buildPaymentDecisionPayload({
+      environment: "test",
+      event: "payment.webhook.signature_rejected",
+      category: "warn",
+      provider: "stripe",
+      result: "rejected",
+      code: "INVALID_SIGNATURE",
+      reason: "invalid_signature",
+    });
+    assertNoForbiddenProperties(payload);
+    assert(!Object.prototype.hasOwnProperty.call(payload, "signature"), "no signature");
+    assert(!Object.prototype.hasOwnProperty.call(payload, "rawBody"), "no rawBody");
+    assert(!Object.prototype.hasOwnProperty.call(payload, "cookie"), "no cookie");
+  }
+
   // --- enums contain emitted reasons ---
   for (const reason of [
     "duplicate_event",

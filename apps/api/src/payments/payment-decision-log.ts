@@ -131,6 +131,22 @@ export const PAYMENT_DECISION_EVENT_NAMES = [
   "payment.webhook.processing_error",
 ] as const;
 
+/** Must never appear on a decision log payload (leak / noise protection). */
+export const PAYMENT_DECISION_FORBIDDEN_KEYS = [
+  "rawBody",
+  "signature",
+  "cookie",
+  "cookies",
+  "payloadHash",
+  "customerEmail",
+  "successUrl",
+  "cancelUrl",
+  "stack",
+  "password",
+  "authorization",
+  "stripe-signature",
+] as const;
+
 export type PaymentDecisionPayload = {
   timestamp: string;
   service: "api";

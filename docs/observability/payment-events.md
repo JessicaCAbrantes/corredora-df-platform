@@ -1,7 +1,8 @@
-# Payment decision events — canonical contract
+# Payment Events Contract
 
-**Status:** Frozen · emitters **3.5-B1** ✅ · **3.5-B2** ✅ · contract/docs/tests **3.5-B3** ✅  
-**Phase:** FASE 3.5-B  
+**Status:** Stable  
+**Version:** 1.0  
+**Phase:** FASE 3.5-B3 (contract freeze)  
 **Date:** 2026-08-04  
 **Source of truth:** this file · runtime helper: `apps/api/src/payments/payment-decision-log.ts`  
 **Ops how-to:** [payments-runbook.md § Decision logs](../ops/payments-runbook.md#105-decision-logs-fase-35-b)
@@ -15,6 +16,19 @@ This is the **official contract** for structured payment decision logs. Dashboar
 | **3.5-B3** | Canonical docs + runbook + contract tests | ✅ (this phase) |
 
 **Not in 3.5-B:** correlation / request IDs, OpenTelemetry, Prometheus, dashboards, alerting, logger framework refactor.
+
+---
+
+## Versioning
+
+This catalog is considered **stable** as of FASE 3.5-B3 (`Version 1.0`).
+
+| Change type | How to treat it |
+|---|---|
+| Additive (new optional `reason` / new event with docs + tests) | Contract revision; document in this file; bump minor when useful (`1.1`, …) |
+| Incompatible (rename event, remove/rename field, change enum meaning) | **Breaking contract change** — must be explicit in the PR, update this file + emitters + contract tests, and bump major (`2.0`) |
+
+Do not silently rename events or reshape the JSON schema after consumers (dashboards/alerts) depend on them.
 
 ---
 
@@ -131,11 +145,11 @@ Examples in use:
 
 ### Forbidden fields / content
 
-Never appear on a decision log line:
+Never appear on a decision log line (enforced in contract tests via `PAYMENT_DECISION_FORBIDDEN_KEYS`):
 
-- Raw webhook body / `payloadHash` as a field  
+- `rawBody`, `signature`, `cookie` / `cookies`, `payloadHash`  
 - Signature headers or secret values (`STRIPE_*`, mock HMAC, `AUTH_SECRET`)  
-- Cookies / session tokens  
+- Session tokens / `authorization`  
 - Full customer email, checkout URLs, card data  
 - Prisma / stack traces with query payloads  
 - Extra ad-hoc keys beyond the schema above  
