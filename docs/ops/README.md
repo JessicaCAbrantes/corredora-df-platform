@@ -8,5 +8,6 @@ Operational runbooks for production readiness (docs-only phases).
 
 Related:
 
+- [Payment decision events](../observability/payment-events.md) — canonical log contract (FASE 3.5-B)
 - [Environment variables](../setup/environment.md)
 - [Database ops](../database/README.md) (seed, backup, checklist)
