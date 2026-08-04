@@ -13,6 +13,7 @@
 | [design-system/](./design-system/) | Butterfly UI |
 | [devlog/](./devlog/) | Registro de progresso por sprint |
 | [engineering/](./engineering/) | Manual de engenharia ([handbook](./engineering/engineering-handbook.md) + 10 guias) |
+| [observability/](./observability/) | Contratos de eventos / logs (FASE 3.5-B+) |
 | [ops/](./ops/) | Runbooks operacionais (pagamentos — FASE 3.4-D) |
 | [product/](./product/) | Produto, roadmap, personas |
 | [setup/](./setup/) | Onboarding local e variáveis de ambiente |
@@ -22,6 +23,7 @@
 
 - [Environment variables](./setup/environment.md) — inventário API / Web / Docker / CI
 - [Payments runbook](./ops/payments-runbook.md) — rotação de secrets, smoke, troubleshooting
+- [Payment decision events](./observability/payment-events.md) — contrato canônico de logs de pagamento
 - [Roadmap](./roadmap.md) — planejamento de 15 sprints até o MVP
 - [API — índice](./api/README.md) — contrato Frontend ↔ Backend
 - [Engineering — estrutura](./engineering/01-folder-structure.md) — onde colocar código
