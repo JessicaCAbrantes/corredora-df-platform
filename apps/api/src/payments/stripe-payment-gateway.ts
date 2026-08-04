@@ -103,7 +103,8 @@ export class StripePaymentGateway implements PaymentGateway {
       const paymentId = session.metadata?.paymentId ?? "";
       const kitPickupRequestId = session.metadata?.kitPickupRequestId ?? "";
       if (!paymentId || !kitPickupRequestId || !session.id) {
-        throw new Error("INVALID_PAYLOAD");
+        // Authenticated but not processable — ACK via ledger (FASE 3.4-C4).
+        return { providerEventId, event: null };
       }
 
       if (session.payment_status !== "paid") {
@@ -112,7 +113,7 @@ export class StripePaymentGateway implements PaymentGateway {
 
       const amountTotal = session.amount_total;
       if (typeof amountTotal !== "number") {
-        throw new Error("INVALID_PAYLOAD");
+        return { providerEventId, event: null };
       }
 
       return {

@@ -9,6 +9,10 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import type { PaymentGateway, VerifiedPaymentEvent } from "./payment-gateway";
+import {
+  isPermanentDomainWebhookError,
+  isRetryableDomainWebhookError,
+} from "./webhook-http-policy";
 
 /** Partial unique index from migration 20260803160000. */
 export const KIT_PICKUP_PAYMENTS_PENDING_REQUEST_UIDX =
@@ -286,7 +290,7 @@ export class PaymentsService {
 
   /**
    * FASE 3.4-C1/C2 — ledger + short-circuit by (provider, eventId).
-   * Duplicate processed deliveries return without re-running domain writes.
+   * FASE 3.4-C4 — permanent domain codes → PROCESSED (ACK); PAYMENT_NOT_FOUND → 500 + RECEIVED.
    */
   async processVerifiedWebhook(params: {
     providerEventId: string;
@@ -334,7 +338,23 @@ export class PaymentsService {
     }
 
     if (params.event) {
-      await this.handleVerifiedEvent(params.event);
+      try {
+        await this.handleVerifiedEvent(params.event);
+      } catch (error: unknown) {
+        if (isPermanentDomainWebhookError(error)) {
+          // Explicit allowlist only — mark PROCESSED and ACK (no domain change).
+        } else if (isRetryableDomainWebhookError(error)) {
+          // Leave RECEIVED; surface as 500 so the provider retries (FASE 3.4-C4).
+          throw this.error(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "PAYMENT_NOT_FOUND",
+            "Pagamento não encontrado; retry do provedor permitido.",
+          );
+        } else {
+          // Unknown 4xx / other errors — do not auto-ACK.
+          throw error;
+        }
+      }
     }
 
     await this.prisma.paymentWebhookEvent.update({
