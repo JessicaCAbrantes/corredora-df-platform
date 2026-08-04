@@ -63,6 +63,9 @@ export class StripePaymentGateway implements PaymentGateway {
       metadata: {
         paymentId: input.paymentId,
         kitPickupRequestId: input.kitPickupRequestId,
+        ...(input.correlationId
+          ? { correlationId: input.correlationId }
+          : {}),
       },
     });
 
@@ -102,22 +105,24 @@ export class StripePaymentGateway implements PaymentGateway {
       const session = event.data.object as Stripe.Checkout.Session;
       const paymentId = session.metadata?.paymentId ?? "";
       const kitPickupRequestId = session.metadata?.kitPickupRequestId ?? "";
+      const correlationId = session.metadata?.correlationId?.trim() || null;
       if (!paymentId || !kitPickupRequestId || !session.id) {
         // Authenticated but not processable — ACK via ledger (FASE 3.4-C4).
-        return { providerEventId, event: null };
+        return { providerEventId, event: null, correlationId };
       }
 
       if (session.payment_status !== "paid") {
-        return { providerEventId, event: null };
+        return { providerEventId, event: null, correlationId };
       }
 
       const amountTotal = session.amount_total;
       if (typeof amountTotal !== "number") {
-        return { providerEventId, event: null };
+        return { providerEventId, event: null, correlationId };
       }
 
       return {
         providerEventId,
+        correlationId,
         event: {
           type: "payment.paid",
           provider: this.provider,
@@ -134,11 +139,13 @@ export class StripePaymentGateway implements PaymentGateway {
       const session = event.data.object as Stripe.Checkout.Session;
       const paymentId = session.metadata?.paymentId ?? "";
       const kitPickupRequestId = session.metadata?.kitPickupRequestId ?? "";
+      const correlationId = session.metadata?.correlationId?.trim() || null;
       if (!paymentId || !kitPickupRequestId || !session.id) {
-        return { providerEventId, event: null };
+        return { providerEventId, event: null, correlationId };
       }
       return {
         providerEventId,
+        correlationId,
         event: {
           type: "payment.failed",
           provider: this.provider,
@@ -149,6 +156,6 @@ export class StripePaymentGateway implements PaymentGateway {
       };
     }
 
-    return { providerEventId, event: null };
+    return { providerEventId, event: null, correlationId: null };
   }
 }

@@ -12,6 +12,11 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
+import {
+  generateCorrelationId,
+  getCorrelationId,
+  runWithCorrelationId,
+} from "../observability/correlation-context";
 import { MockPaymentGateway } from "./mock-payment-gateway";
 import { PaymentsService } from "./payments.service";
 import { isSignatureVerifyError } from "./webhook-http-policy";
@@ -39,6 +44,7 @@ export class PaymentWebhookController {
    * Idempotency: UNIQUE(provider, event_id) ledger short-circuit (FASE 3.4-C1/C2).
    * HTTP retry contract (FASE 3.4-C4): 401 signature only; permanent → 200+PROCESSED;
    * PAYMENT_NOT_FOUND / transient → 500+RECEIVED.
+   * FASE 3.5-C — prefers checkout correlationId from provider metadata when present.
    */
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
@@ -101,24 +107,32 @@ export class PaymentWebhookController {
     }
 
     const payloadHash = createHash("sha256").update(rawBody).digest("hex");
+    const correlationId =
+      parsed.correlationId?.trim() ||
+      getCorrelationId() ||
+      generateCorrelationId();
 
     try {
-      await this.paymentsService.processVerifiedWebhook({
-        providerEventId: parsed.providerEventId,
-        event: parsed.event,
-        payloadHash,
-      });
+      await runWithCorrelationId(correlationId, () =>
+        this.paymentsService.processVerifiedWebhook({
+          providerEventId: parsed.providerEventId,
+          event: parsed.event,
+          payloadHash,
+        }),
+      );
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.paymentsService.emitWebhookDecision({
-        event: "payment.webhook.processing_error",
-        category: "error",
-        result: "error",
-        providerEventId: parsed.providerEventId,
-        code: "WEBHOOK_PROCESSING_ERROR",
-        reason: "processing_failure",
+      await runWithCorrelationId(correlationId, () => {
+        this.paymentsService.emitWebhookDecision({
+          event: "payment.webhook.processing_error",
+          category: "error",
+          result: "error",
+          providerEventId: parsed.providerEventId,
+          code: "WEBHOOK_PROCESSING_ERROR",
+          reason: "processing_failure",
+        });
       });
       throw new HttpException(
         {
@@ -149,6 +163,7 @@ export class PaymentWebhookController {
     @Query("currency") currency: string,
     @Query("successUrl") successUrl: string,
     @Query("cancelUrl") cancelUrl: string,
+    @Query("correlationId") correlationId: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
     const gateway = this.paymentsService.getGateway();
@@ -165,6 +180,15 @@ export class PaymentWebhookController {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    const signed = gateway.signPaidEvent({
+      paymentId,
+      providerPaymentId,
+      kitPickupRequestId: requestId,
+      amount,
+      currency,
+      correlationId: correlationId?.trim() || undefined,
+    });
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -189,28 +213,12 @@ button{display:block;width:100%;margin:.5rem 0;padding:.75rem;font-size:1rem;cur
 <script>
 document.getElementById("pay").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const payload = ${JSON.stringify({
-    type: "payment.paid",
-    paymentId,
-    providerPaymentId,
-    kitPickupRequestId: requestId,
-    amount,
-    currency,
-  })};
-  const body = JSON.stringify(payload);
+  const body = ${JSON.stringify(signed.body)};
   const res = await fetch("/api/v1/payments/webhook", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Corredora-Payment-Signature": ${JSON.stringify(
-        gateway.signPaidEvent({
-          paymentId,
-          providerPaymentId,
-          kitPickupRequestId: requestId,
-          amount,
-          currency,
-        }).signature,
-      )}
+      "X-Corredora-Payment-Signature": ${JSON.stringify(signed.signature)}
     },
     body
   });

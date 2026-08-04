@@ -7,6 +7,8 @@ export type CreateCheckoutInput = {
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string;
+  /** FASE 3.5-C — propagated to provider metadata when present. */
+  correlationId?: string;
 };
 
 export type CreateCheckoutResult = {
@@ -37,10 +39,12 @@ export type VerifiedPaymentEvent =
  * Result of verifying a webhook delivery.
  * `event` is null when the delivery is intentionally ignored (e.g. non-payment Stripe types).
  * `providerEventId` is always set after a successful signature verify (Stripe `event.id` or mock synthetic id).
+ * `correlationId` is recovered from provider metadata when available (FASE 3.5-C).
  */
 export type ParsedWebhook = {
   providerEventId: string;
   event: VerifiedPaymentEvent | null;
+  correlationId?: string | null;
 };
 
 /**

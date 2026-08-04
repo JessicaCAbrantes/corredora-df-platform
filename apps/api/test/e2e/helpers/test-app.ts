@@ -6,10 +6,13 @@ import { AppModule } from "../../../src/app.module";
 import type { Env } from "../../../src/config/env.validation";
 import { UnhandledExceptionFilter } from "../../../src/filters/unhandled-exception.filter";
 import { ValidationExceptionFilter } from "../../../src/filters/validation-exception.filter";
+import { correlationIdMiddleware } from "../../../src/observability/correlation-middleware";
 
 export async function createTestApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService<Env, true>);
+
+  app.use(correlationIdMiddleware);
 
   app.use(
     helmet({

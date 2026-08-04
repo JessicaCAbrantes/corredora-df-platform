@@ -2,7 +2,7 @@
 
 Operational procedures for kit-pickup payments in Corredora DF Platform.
 
-> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Loki/Datadog/Grafana alerting). Structured **payment decision logs** (FASE 3.5-B) **are** emitted as JSON lines on the API process stdout — see [§10.5](#105-decision-logs-fase-35-b).
+> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Loki/Datadog/Grafana alerting). Structured **payment decision logs** (FASE 3.5-B) and **correlation IDs** (FASE 3.5-C, header `x-correlation-id`) **are** available — see [§10.5](#105-decision-logs-fase-35-b) and [correlation.md](../observability/correlation.md).
 
 ## 1. Objective and limits
 
@@ -219,7 +219,7 @@ Canonical catalog + JSON schema: [`docs/observability/payment-events.md`](../obs
 | Emitter | `apps/api` — `PaymentsService` / `PaymentWebhookController` |
 | Format | One JSON object per line on process **stdout** (`console.info` / `warn` / `error` / `debug` mapped from `category`) |
 | Filter key | Field `event` (e.g. `payment.webhook.payment_confirmed`) |
-| Correlation today | Use `paymentId`, `requestId`, `providerEventId`, `providerPaymentId` — **no** dedicated `correlationId` yet (3.5-C) |
+| Correlation | Field `correlationId` — see [correlation.md](../observability/correlation.md); header `x-correlation-id` |
 
 There is **no** dedicated log shipper or dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
 

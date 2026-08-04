@@ -4,7 +4,8 @@ Contracts and guidance for logs, metrics, and operational signals (FASE 3.5+).
 
 | Document | Description |
 |---|---|
-| [payment-events.md](./payment-events.md) | **Canonical** payment decision event catalog, categories, JSON schema, forbidden fields (FASE 3.5-B) |
+| [payment-events.md](./payment-events.md) | **Canonical** payment decision event catalog + JSON schema (v1.1) |
+| [correlation.md](./correlation.md) | Correlation ID lifecycle (FASE 3.5-C) |
 
 Related:
 
