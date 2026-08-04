@@ -61,6 +61,13 @@ export class PaymentWebhookController {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "INVALID_SIGNATURE";
       if (!isSignatureVerifyError(message)) {
+        this.paymentsService.emitWebhookDecision({
+          event: "payment.webhook.verify_error",
+          category: "error",
+          result: "error",
+          code: "WEBHOOK_VERIFY_ERROR",
+          reason: "verify_failure",
+        });
         throw new HttpException(
           {
             status: "error",
@@ -73,6 +80,13 @@ export class PaymentWebhookController {
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
+      this.paymentsService.emitWebhookDecision({
+        event: "payment.webhook.signature_rejected",
+        category: "warn",
+        result: "rejected",
+        code: message,
+        reason: "invalid_signature",
+      });
       throw new HttpException(
         {
           status: "error",
@@ -98,6 +112,14 @@ export class PaymentWebhookController {
       if (error instanceof HttpException) {
         throw error;
       }
+      this.paymentsService.emitWebhookDecision({
+        event: "payment.webhook.processing_error",
+        category: "error",
+        result: "error",
+        providerEventId: parsed.providerEventId,
+        code: "WEBHOOK_PROCESSING_ERROR",
+        reason: "processing_failure",
+      });
       throw new HttpException(
         {
           status: "error",
