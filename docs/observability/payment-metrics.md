@@ -25,11 +25,13 @@ Metrics answer **rate / volume** questions. Domain truth and forensic detail rem
 | Rule | Detail |
 |---|---|
 | Single emission path | Counters are incremented only from `emitPaymentDecisionLog` → `recordPaymentDecisionMetric` |
-| Event → metric mapping | Each counter maps from one (or a closed set of) decision `event` values |
+| One increment per decision emit | Each domain decision emits **one** decision event; the mapped counter increments once for that emit. Stripe replays that take the duplicate path increment `payment_webhook_duplicate_total`, not `payment_confirmed_total` again. Transient retries that re-emit `webhook.retryable` intentionally increment again (one count per attempt). |
+| Event → metric mapping | Each counter maps from exactly one decision `event` value (1:1 with the catalog below) |
 | No ID labels | Never label with `paymentId`, `requestId`, `correlationId`, `userId`, `providerPaymentId`, `providerEventId` |
 | Low cardinality | Labels only: `provider`, and when listed `reason` / `code` (closed enums from the events contract) |
 | No derived domain metrics | Do not invent counters for “business KPIs”; keep those in logs/analytics later |
 | No dual-write | Application code must not increment counters outside the decision-log hook |
+| Best-effort | Metric recording must not throw into the payment path; failures are swallowed after the decision log is written |
 | Process-local | v1.0 ships an in-memory registry per process (Prometheus / scrape is optional later) |
 
 ---
@@ -78,7 +80,7 @@ Examples reserved for D2 (names may change until D2 ships):
 | `reason` | Closed `PaymentDecisionReason` when the metric declares the label; otherwise omit |
 | `code` | Closed `PaymentDecisionCode` when the metric declares the label; otherwise omit |
 
-Missing optional domain fields on the event **must not** invent label values. If `reason`/`code` is required by the metric and absent on the event, use the literal `"unknown"` (stable sentinel — not a free-form string).
+Missing optional domain fields on the event **must not** invent label values. If `reason`/`code` is required by the metric and absent on the event, use the literal `"unknown"` (stable sentinel — not a free-form string). Emitters should always pass the closed enum when the decision has one; `"unknown"` is a contract fallback for incomplete payloads, not a normal operational label.
 
 ---
 

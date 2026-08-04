@@ -31,6 +31,23 @@ function main(): void {
     "webhook.received deferred to D2",
   );
 
+  // --- catalog ↔ mapping 1:1 (no doc/code drift for names) ---
+  const mappedNames = Object.values(PAYMENT_EVENT_TO_METRIC).map((s) => s.name);
+  assert(
+    new Set(mappedNames).size === mappedNames.length,
+    "each metric mapped from exactly one event",
+  );
+  for (const name of PAYMENT_METRIC_NAMES) {
+    assert(mappedNames.includes(name), `metric ${name} has an event mapping`);
+  }
+  for (const name of mappedNames) {
+    assert(
+      (PAYMENT_METRIC_NAMES as readonly string[]).includes(name),
+      `mapped metric ${name} is in PAYMENT_METRIC_NAMES`,
+    );
+    assert(name.startsWith("payment_") && name.endsWith("_total"), name);
+  }
+
   resetPaymentMetricsForTests();
 
   // --- event X → counter Y via emitPaymentDecisionLog (single path) ---
@@ -184,6 +201,31 @@ function main(): void {
         `snapshot must not include ${forbidden}`,
       );
     }
+  }
+
+  // --- best-effort: metrics failure must not break emit ---
+  const originalInc = paymentMetricsRegistry.inc;
+  paymentMetricsRegistry.inc = () => {
+    throw new Error("simulated metrics failure");
+  };
+  try {
+    const ok = emitPaymentDecisionLog(
+      {
+        environment: "test",
+        event: "payment.webhook.signature_rejected",
+        category: "warn",
+        provider: "mock",
+        result: "rejected",
+        reason: "invalid_signature",
+      },
+      () => undefined,
+    );
+    assert(
+      ok.event === "payment.webhook.signature_rejected",
+      "emit returns despite metrics throw",
+    );
+  } finally {
+    paymentMetricsRegistry.inc = originalInc;
   }
 
   resetPaymentMetricsForTests();

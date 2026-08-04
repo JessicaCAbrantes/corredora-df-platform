@@ -218,6 +218,7 @@ function buildLabels(
 /**
  * Single metrics emission path — called from `emitPaymentDecisionLog` only.
  * Unknown / unmapped events (e.g. webhook.received) are no-ops.
+ * Best-effort: errors are swallowed by the caller (`emitPaymentDecisionLog`).
  */
 export function recordPaymentDecisionMetric(
   payload: PaymentDecisionPayload,

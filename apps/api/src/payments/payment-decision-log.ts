@@ -238,7 +238,12 @@ export function emitPaymentDecisionLog(
 ): PaymentDecisionPayload {
   const payload = buildPaymentDecisionPayload(input);
   sink(payload);
-  recordPaymentDecisionMetric(payload);
+  // Best-effort: metrics must never break the payment path.
+  try {
+    recordPaymentDecisionMetric(payload);
+  } catch {
+    // Swallow — registry/mapping failures are observability-only.
+  }
   return payload;
 }
 
