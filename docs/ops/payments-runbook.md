@@ -2,7 +2,7 @@
 
 Operational procedures for kit-pickup payments in Corredora DF Platform.
 
-> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Prometheus scrape, Grafana, Loki, Datadog, Alertmanager). Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C), **metrics** (FASE 3.5-D1/D2), and **dashboard/alert contracts** (FASE 3.5-D3-A, semantic only — no live panels/alerts) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [§10.6](#106-dashboards--alerts-fase-35-d3-a), [correlation.md](../observability/correlation.md), [payment-metrics.md](../observability/payment-metrics.md), [payment-dashboards.md](../observability/payment-dashboards.md), and [payment-alerts.md](../observability/payment-alerts.md).
+> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, Grafana, Alertmanager, Loki, Datadog, or a managed Prometheus server. Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C), **metrics** (FASE 3.5-D1/D2), **dashboard/alert contracts** (FASE 3.5-D3-A), and optional **`GET /metrics`** Prometheus text export (FASE 3.5-D3-B, fail-closed / bearer) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [§10.6](#106-dashboards--alerts-fase-35-d3-a), [payment-metrics.md](../observability/payment-metrics.md).
 
 ## 1. Objective and limits
 
@@ -19,7 +19,7 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 
 - Implementing dual/previous secrets in code
 - Redis, message queues, workers, Kafka, Outbox
-- Observability **platforms** (Prometheus scrape, `/metrics` export, Grafana, Alertmanager, log shipping) — FASE 3.5-D3-B+ / later
+- Observability **platforms** (Grafana, Alertmanager, Prometheus server, ServiceMonitor, log shipping) — later
 - Docker/Kubernetes production deploy — FASE 3.6+
 - Changing payment domain logic, checkout, or HTTP contract (already C1–C4)
 - Routine SQL that forces `PROCESSED` / `PAID` (not a normal procedure)
@@ -279,11 +279,11 @@ Canonical contracts:
 
 | Exists today? | |
 |---|---|
-| Scrape automático | **Não** |
-| Prometheus / `/metrics` | **Não** (D3-B) |
-| Grafana / Datadog / Loki | **Não** |
-| Alertmanager / paging | **Não** |
+| Scrape automático / Prometheus server | **Não** |
+| `GET /metrics` (optional) | **Sim** — off by default (`METRICS_ENABLED=false` → 404); when enabled, Bearer required |
+| Grafana / Datadog / Loki / Alertmanager | **Não** |
 | What D3-A shipped | Semantic **contracts** for panels and alerts |
+| What D3-B shipped | Fail-closed Prometheus text export of the metrics contract |
 
 ### How to interpret dashboards
 

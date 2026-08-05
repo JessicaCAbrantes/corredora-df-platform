@@ -24,6 +24,14 @@ export type Env = {
    * MVP only — not a full RBAC.
    */
   KIT_PICKUP_OPERATOR_USER_IDS: string[];
+  /**
+   * FASE 3.5-D3-B — expose GET /metrics.
+   * Default false → endpoint returns 404.
+   * When true, METRICS_BEARER_TOKEN is required (fail-closed).
+   */
+  METRICS_ENABLED: boolean;
+  /** Required non-empty when METRICS_ENABLED=true */
+  METRICS_BEARER_TOKEN: string | null;
 };
 
 function requireString(value: unknown, key: string): string {
@@ -38,6 +46,19 @@ function optionalString(value: unknown): string | null {
     return null;
   }
   return value.trim();
+}
+
+function parseBoolFlag(value: unknown, defaultValue: boolean): boolean {
+  if (value === undefined || value === null || value === "") {
+    return defaultValue;
+  }
+  if (typeof value === "boolean") return value;
+  const raw = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(raw)) return true;
+  if (["0", "false", "no", "off"].includes(raw)) return false;
+  throw new Error(
+    `Invalid boolean environment variable value: ${String(value)}`,
+  );
 }
 
 function defaultWebhookSecretForMock(authSecret: string): string {
@@ -138,6 +159,18 @@ export function validateEnv(config: Record<string, unknown>): Env {
     .map((id) => id.trim())
     .filter((id) => id.length > 0);
 
+  // --- FASE 3.5-D3-B: metrics export fail-closed ---
+  const metricsEnabled = parseBoolFlag(config.METRICS_ENABLED, false);
+  const metricsBearerToken = optionalString(config.METRICS_BEARER_TOKEN);
+  if (metricsEnabled && metricsBearerToken == null) {
+    throw new Error(
+      [
+        "METRICS_ENABLED=true requires a non-empty METRICS_BEARER_TOKEN.",
+        "Set METRICS_BEARER_TOKEN or disable metrics with METRICS_ENABLED=false.",
+      ].join(" "),
+    );
+  }
+
   return {
     PORT: port,
     NODE_ENV: nodeEnv,
@@ -152,5 +185,7 @@ export function validateEnv(config: Record<string, unknown>): Env {
     STRIPE_SECRET_KEY: stripeSecretKey,
     STRIPE_WEBHOOK_SECRET: stripeWebhookSecret,
     KIT_PICKUP_OPERATOR_USER_IDS: operatorIds,
+    METRICS_ENABLED: metricsEnabled,
+    METRICS_BEARER_TOKEN: metricsEnabled ? metricsBearerToken : null,
   };
 }

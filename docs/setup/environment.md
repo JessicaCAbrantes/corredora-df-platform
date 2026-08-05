@@ -70,6 +70,8 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 | `STRIPE_SECRET_KEY` | SECRET | If `stripe` | — | Stripe API secret key | Boot fails if provider is stripe |
 | `STRIPE_WEBHOOK_SECRET` | SECRET | If `stripe` | — | Stripe webhook signing secret | Boot fails if provider is stripe |
 | `KIT_PICKUP_OPERATOR_USER_IDS` | INTERNAL | No | empty list | Comma-separated User.id allowlist (MVP) | Operations return 403 |
+| `METRICS_ENABLED` | INTERNAL | No | `false` | Expose `GET /metrics` (Prometheus text) | Endpoint returns **404** |
+| `METRICS_BEARER_TOKEN` | SECRET | If `METRICS_ENABLED=true` | — | Bearer token for `/metrics` | Boot fails when metrics enabled without token |
 
 ### Notes (API)
 
@@ -77,6 +79,7 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 - **`AUTH_SECRET`:** also read via `process.env` in the auth boundary (in addition to `ConfigService`). Keep a single value in `.env`.
 - **`KIT_PICKUP_OPERATOR_USER_IDS`:** parsed in env validation and also read from `process.env` in the operator assert helper. Keep one comma-separated string in `.env`.
 - **Stripe:** set `PAYMENT_PROVIDER=stripe` and both Stripe secrets. Do not use live keys in local/CI.
+- **Metrics export (FASE 3.5-D3-B):** `METRICS_ENABLED` defaults to `false` (`GET /metrics` → 404). When `true`, `METRICS_BEARER_TOKEN` is **required** (non-empty) or boot fails. Scrape with `Authorization: Bearer <token>`.
 - Auth seed credentials and secret generation: [`apps/api/src/auth/README.md`](../../apps/api/src/auth/README.md).
 - **Database seed:** local/CI only. Production is fail-closed unless `ALLOW_DB_SEED=true` — see [`docs/database/seeding.md`](../database/seeding.md).
 - `ALLOW_DB_SEED` — INTERNAL, optional, **seed script only** (not validated at Nest boot). Never set in normal production deploys.
@@ -90,6 +93,8 @@ Validated in [`apps/api/src/config/env.validation.ts`](../../apps/api/src/config
 | `NODE_ENV=production` and `PAYMENT_PROVIDER=mock` (or default `mock`) | Boot fails |
 | `PAYMENT_PROVIDER=stripe` without `STRIPE_SECRET_KEY` or `STRIPE_WEBHOOK_SECRET` (missing or blank) | Boot fails |
 | `PAYMENT_PROVIDER=mock` with `STRIPE_SECRET_KEY` and/or `STRIPE_WEBHOOK_SECRET` set | Boot fails (ambiguous config) |
+| `METRICS_ENABLED=true` without non-empty `METRICS_BEARER_TOKEN` | Boot fails |
+| `METRICS_ENABLED=false` (default) | Boot OK; `GET /metrics` returns 404 |
 | `PAYMENT_PROVIDER=mock` in `development` / `test` | Allowed; `PAYMENT_WEBHOOK_SECRET` optional (derived from `AUTH_SECRET` if omitted) |
 | `PAYMENT_PROVIDER=stripe` with both Stripe secrets | Allowed in any `NODE_ENV` |
 

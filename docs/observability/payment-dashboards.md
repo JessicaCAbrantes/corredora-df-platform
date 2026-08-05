@@ -19,10 +19,10 @@ This contract is **semantic**. It does **not** claim that Grafana, Prometheus, o
 
 | Claim | Today |
 |---|---|
-| Scrape automático | **Não** |
-| Prometheus | **Não** |
+| Scrape automático / Prometheus server | **Não** (optional `GET /metrics` is app-side export only — see metrics contract) |
+| Prometheus text export | Optional — `METRICS_ENABLED` + bearer (D3-B) |
 | Grafana / Datadog / Loki | **Não** |
-| Endpoint `/metrics` | **Não** (reservado a D3-B) |
+| Endpoint always-on `/metrics` | **Não** — default disabled (404) |
 | O que este documento faz | Descreve o comportamento **esperado** de painéis quando a telemetria for consumida |
 
 Until export exists, operators use [decision logs](../ops/payments-runbook.md#105-decision-logs-fase-35-b) and SQL/ledger inspection. Panel definitions below remain the target layout.
