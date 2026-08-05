@@ -20,6 +20,7 @@
 | Default | `METRICS_ENABLED=false` → **404** |
 | When enabled | Bearer **required**: `Authorization: Bearer $METRICS_BEARER_TOKEN` (missing/wrong → **401**; empty token at boot → **fail**) |
 | Series | Only this Metrics Contract (counters v1.0 + operational D2) |
+| Local scrape (FASE 4.1-B) | [docs/platform/observability-local.md](../platform/observability-local.md) — Prometheus Compose; app contracts unchanged |
 
 **Scrape aggregation (repeat for operators):**
 

@@ -80,6 +80,7 @@ Template: [`apps/api/.env.example`](../../apps/api/.env.example).
 - **`KIT_PICKUP_OPERATOR_USER_IDS`:** parsed in env validation and also read from `process.env` in the operator assert helper. Keep one comma-separated string in `.env`.
 - **Stripe:** set `PAYMENT_PROVIDER=stripe` and both Stripe secrets. Do not use live keys in local/CI.
 - **Metrics export (FASE 3.5-D3-B):** `METRICS_ENABLED` defaults to `false` (`GET /metrics` → 404). When `true`, `METRICS_BEARER_TOKEN` is **required** (non-empty) or boot fails. Scrape with `Authorization: Bearer <token>`.
+- **Local Prometheus scrape (FASE 4.1-B):** [docs/platform/observability-local.md](../platform/observability-local.md) — Compose + bearer file; do not reuse the local-only token outside the laptop.
 - Auth seed credentials and secret generation: [`apps/api/src/auth/README.md`](../../apps/api/src/auth/README.md).
 - **Database seed:** local/CI only. Production is fail-closed unless `ALLOW_DB_SEED=true` — see [`docs/database/seeding.md`](../database/seeding.md).
 - `ALLOW_DB_SEED` — INTERNAL, optional, **seed script only** (not validated at Nest boot). Never set in normal production deploys.
