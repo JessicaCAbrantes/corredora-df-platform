@@ -13,7 +13,8 @@ A **aplicação** (FASE 3.4 / 3.5) permanece congelada. Este documento descreve 
 | Claim | Today |
 |---|---|
 | Prometheus local (Compose) | **Sim** (FASE 4.1-B) |
-| Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1) |
+| Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1 / C2) |
+| Dashboard as code | **Sim** — [dashboard-as-code.md](./dashboard-as-code.md) (FASE 4.1-C3) |
 | Alertmanager | **Não** (4.1-D) |
 | API containerizada | **Não** — API roda no host |
 | Staging / produção | **Não** |
@@ -162,4 +163,5 @@ curl -sS -H "Authorization: Bearer local-corredora-metrics-dev-token" \
 
 ## 9. Próximo
 
-**4.1-C2** — dashboard `payments-ops-v1` no Grafana ([grafana-local.md](./grafana-local.md) · [payment-dashboards.md](../observability/payment-dashboards.md)).
+**4.1-D** — Alertmanager.  
+Grafana / dashboard as code: [grafana-local.md](./grafana-local.md) · [dashboard-as-code.md](./dashboard-as-code.md).

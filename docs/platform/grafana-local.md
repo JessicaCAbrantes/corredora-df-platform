@@ -2,9 +2,9 @@
 
 **Status:** Stable (local provisioning + payments dashboard)  
 **Escopo:** Grafana no Compose + datasource Prometheus + dashboard `payments-ops-v1` (contrato D3-A)  
-**Fora de escopo:** fluxo export/commit (4.1-C3), Alertmanager, SSO, produção, mudanças na app
+**Fora de escopo:** Alertmanager, SSO, produção, mudanças na app
 
-Consome o Prometheus de [observability-local.md](./observability-local.md). A aplicação (FASE 3.4 / 3.5) permanece congelada.
+Consome o Prometheus de [observability-local.md](./observability-local.md). Fluxo edit → export → commit: [dashboard-as-code.md](./dashboard-as-code.md) (FASE 4.1-C3). A aplicação (FASE 3.4 / 3.5) permanece congelada.
 
 ---
 
@@ -12,8 +12,9 @@ Consome o Prometheus de [observability-local.md](./observability-local.md). A ap
 
 | Claim | Today |
 |---|---|
-| Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1) |
+| Grafana local (Compose) | **Sim** — (FASE 4.1-C1) |
 | Dashboard `payments-ops-v1` | **Sim** — JSON em `infrastructure/observability/grafana/dashboards/payments-ops-v1.json` (FASE 4.1-C2) |
+| Dashboard as code (processo) | **Sim** — [dashboard-as-code.md](./dashboard-as-code.md) (FASE 4.1-C3) |
 | Alertmanager / Grafana Cloud | **Não** |
 | Produção / SSO | **Não** |
 
@@ -77,9 +78,11 @@ infrastructure/observability/grafana/
 
 Painéis oficiais: Checkout Funnel, Webhook Outcomes, Webhook Latency, Ledger Health — ver [Dashboard Contract](../observability/payment-dashboards.md).
 
+Para alterar o JSON oficial: [dashboard-as-code.md](./dashboard-as-code.md) (edit → export → commit).
+
 ---
 
-## 5. O que C1/C2 não incluem
+## 5. O que C1/C2/C3 não incluem
 
 - Alertas / Alertmanager
 - Plugins extras
@@ -91,5 +94,4 @@ Painéis oficiais: Checkout Funnel, Webhook Outcomes, Webhook Latency, Ledger He
 
 ## 6. Próximo
 
-**4.1-C3** — documentação do fluxo export → commit (dashboard as code).  
 **4.1-D** — Alertmanager.
