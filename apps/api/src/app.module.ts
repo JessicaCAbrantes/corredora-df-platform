@@ -9,6 +9,7 @@ import { HealthModule } from "./health/health.module";
 import { KitPickupOperationsModule } from "./kit-pickup-operations/kit-pickup-operations.module";
 import { KitPickupRequestsModule } from "./kit-pickup-requests/kit-pickup-requests.module";
 import { KitPickupServicesModule } from "./kit-pickup-services/kit-pickup-services.module";
+import { MetricsModule } from "./observability/metrics.module";
 import { PartnersModule } from "./partners/partners.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -22,6 +23,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     }),
     PrismaModule,
     HealthModule,
+    MetricsModule,
     AuthModule,
     EventsModule,
     PartnersModule,

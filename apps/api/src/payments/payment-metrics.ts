@@ -327,6 +327,45 @@ export class PaymentMetricsRegistry {
     };
   }
 
+  listCounterSamples(): PaymentMetricSample[] {
+    const samples: PaymentMetricSample[] = [];
+    for (const [key, value] of this.counters.entries()) {
+      const sep = key.indexOf("|");
+      samples.push({
+        name: key.slice(0, sep) as PaymentMetricName,
+        labels: parseLabels(key.slice(sep + 1)),
+        value,
+      });
+    }
+    return samples;
+  }
+
+  listGaugeSamples(): PaymentMetricSample[] {
+    const samples: PaymentMetricSample[] = [];
+    for (const [key, value] of this.gauges.entries()) {
+      const sep = key.indexOf("|");
+      samples.push({
+        name: key.slice(0, sep) as PaymentMetricName,
+        labels: parseLabels(key.slice(sep + 1)),
+        value,
+      });
+    }
+    return samples;
+  }
+
+  listHistogramSnapshots(): PaymentHistogramSnapshot[] {
+    const out: PaymentHistogramSnapshot[] = [];
+    for (const [key, hist] of this.histograms.entries()) {
+      const sep = key.indexOf("|");
+      const name = key.slice(0, sep) as PaymentOperationalMetricName;
+      if (name !== "payment_webhook_processing_duration_seconds") continue;
+      const labels = parseLabels(key.slice(sep + 1));
+      const snap = this.getHistogram(name, labels);
+      if (snap) out.push(snap);
+    }
+    return out;
+  }
+
   snapshot(): PaymentMetricSample[] {
     const samples: PaymentMetricSample[] = [];
     for (const [key, value] of this.counters.entries()) {

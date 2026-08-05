@@ -19,8 +19,8 @@ This contract is **semantic**. Conditions use PromQL-shaped expressions as the *
 
 | Claim | Today |
 |---|---|
-| Scrape automático | **Não** |
-| Prometheus / Alertmanager | **Não** |
+| Scrape automático / Prometheus server | **Não** |
+| `GET /metrics` (optional export) | See [payment-metrics.md](./payment-metrics.md) — off by default |
 | Grafana / Datadog alerting | **Não** |
 | Paging / on-call routing | **Não** |
 | O que este documento faz | Descreve alertas **esperados** e o encadeamento Dashboard → Alerta → Runbook |

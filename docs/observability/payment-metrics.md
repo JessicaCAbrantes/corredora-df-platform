@@ -4,9 +4,30 @@
 **Scope:**  
 - **v1.0:** Counters derived from the [Payment Events Contract](./payment-events.md) (v1.1)  
 - **D2:** Webhook processing histogram + DB-backed ledger RECEIVED gauges  
-**Out of scope:** live Grafana/Alertmanager, Prometheus scrape / `/metrics` (3.5-D3-B), checkout creation latency, `payment_retryable_pending_total`
+**Out of scope:** live Grafana/Alertmanager, Prometheus **server** / ServiceMonitor, checkout creation latency, `payment_retryable_pending_total`
 
-**Related (3.5-D3-A):** [payment-dashboards.md](./payment-dashboards.md) · [payment-alerts.md](./payment-alerts.md) — semantic contracts only.
+**Related:** [payment-dashboards.md](./payment-dashboards.md) · [payment-alerts.md](./payment-alerts.md) · scrape endpoint below (D3-B).
+
+---
+
+## 0. Scrape export (FASE 3.5-D3-B)
+
+| Item | Value |
+|---|---|
+| Path | `GET /metrics` (outside `/api/v1`, like `/health/*`) |
+| Format | Prometheus text exposition **0.0.4** |
+| Serializer | `renderPrometheusText(registry)` — no `prom-client` |
+| Default | `METRICS_ENABLED=false` → **404** |
+| When enabled | Bearer **required**: `Authorization: Bearer $METRICS_BEARER_TOKEN` (missing/wrong → **401**; empty token at boot → **fail**) |
+| Series | Only this Metrics Contract (counters v1.0 + operational D2) |
+
+**Scrape aggregation (repeat for operators):**
+
+| Type | Across replicas |
+|---|---|
+| Counter | `sum` then `rate` / `increase` |
+| Histogram | `histogram_quantile` over summed buckets |
+| Gauge DB-backed (`payment_ledger_received_*`) | **`max()`** — never `sum()` |
 
 ---
 
@@ -154,13 +175,17 @@ Missing optional decision fields on counters: use `"unknown"` only as fallback �
 | Counter hook | `emitPaymentDecisionLog` → `recordPaymentDecisionMetric` |
 | Duration observe | `PaymentsService.processVerifiedWebhook` |
 | Ledger sampler | `apps/api/src/payments/payment-ledger-metrics-sampler.ts` |
-| Contract tests | `payment-metrics.contract.test.ts`, `payment-metrics-operational.contract.test.ts` |
+| Prometheus text | `apps/api/src/observability/prometheus-text.ts` |
+| `GET /metrics` | `apps/api/src/observability/metrics.controller.ts` |
+| Contract tests | `payment-metrics*.contract.test.ts`, `metrics-export.contract.test.ts` |
 
 ---
 
 ## 8. Honest limits
 
-- Counters and histograms are **per process** until scrape/export (D3). Multi-instance → **sum** those series.
-- DB-backed gauges reflect **global** ledger state. Multi-instance → **do not sum** replicas.
+- Counters and histograms are **per process**. Multi-instance scrapes → **sum** those series.
+- DB-backed gauges reflect **global** ledger state. Multi-instance → **`max()`**, never sum.
+- `GET /metrics` is off by default; enabling it requires a bearer secret (fail-closed).
+- Export does **not** include Grafana, Alertmanager, or a Prometheus server.
 - Metrics do **not** replace decision logs for correlation or forensics.
 - `payment_ledger_received_total` is the open RECEIVED backlog (NOT_FOUND **and** crash/other stuck rows) — not a pure “retryable only” count.

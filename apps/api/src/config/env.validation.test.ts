@@ -177,6 +177,42 @@ function run(): void {
     "blank AUTH_SECRET",
   );
 
+  // --- FASE 3.5-D3-B metrics export fail-closed ---
+  {
+    const env = validateEnv(baseDev);
+    assert(env.METRICS_ENABLED === false, "METRICS_ENABLED defaults false");
+    assert(env.METRICS_BEARER_TOKEN == null, "token null when disabled");
+  }
+
+  {
+    const env = validateEnv({
+      ...baseDev,
+      METRICS_ENABLED: "true",
+      METRICS_BEARER_TOKEN: "metrics-secret",
+    });
+    assert(env.METRICS_ENABLED === true, "metrics enabled");
+    assert(env.METRICS_BEARER_TOKEN === "metrics-secret", "bearer kept");
+  }
+
+  expectThrow(
+    {
+      ...baseDev,
+      METRICS_ENABLED: "true",
+    },
+    "METRICS_BEARER_TOKEN",
+    "enabled without token",
+  );
+
+  expectThrow(
+    {
+      ...baseDev,
+      METRICS_ENABLED: "true",
+      METRICS_BEARER_TOKEN: "   ",
+    },
+    "METRICS_BEARER_TOKEN",
+    "enabled with blank token",
+  );
+
   console.log("env.validation.test.ts: OK");
 }
 
