@@ -1,8 +1,8 @@
-# Observabilidade local — Grafana (FASE 4.1-C1)
+# Observabilidade local — Grafana (FASE 4.1-C1 / C2)
 
-**Status:** Stable (local provisioning)  
-**Escopo:** Grafana no Compose + datasource Prometheus + provider de dashboards (pasta pronta)  
-**Fora de escopo:** dashboards de pagamento (4.1-C2), Alertmanager, SSO, produção, mudanças na app
+**Status:** Stable (local provisioning + payments dashboard)  
+**Escopo:** Grafana no Compose + datasource Prometheus + dashboard `payments-ops-v1` (contrato D3-A)  
+**Fora de escopo:** fluxo export/commit (4.1-C3), Alertmanager, SSO, produção, mudanças na app
 
 Consome o Prometheus de [observability-local.md](./observability-local.md). A aplicação (FASE 3.4 / 3.5) permanece congelada.
 
@@ -12,9 +12,8 @@ Consome o Prometheus de [observability-local.md](./observability-local.md). A ap
 
 | Claim | Today |
 |---|---|
-| Grafana local (Compose) | **Sim** (este marco) |
-| Datasource Prometheus provisionado | **Sim** (`uid: prometheus`) |
-| Dashboard `payments-ops-v1` | **Não** — 4.1-C2 |
+| Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1) |
+| Dashboard `payments-ops-v1` | **Sim** — JSON em `infrastructure/observability/grafana/dashboards/payments-ops-v1.json` (FASE 4.1-C2) |
 | Alertmanager / Grafana Cloud | **Não** |
 | Produção / SSO | **Não** |
 
@@ -46,6 +45,7 @@ docker compose -f infrastructure/docker-compose.yml up -d prometheus grafana
 2. Login local default: `admin` / `admin` (troque na primeira entrada)
 3. **Connections → Data sources → Prometheus** deve existir e estar **default**
 4. Em Explore, rode `up{job="corredora-api"}` (target Prometheus UP + API com métricas)
+5. Abra o dashboard **Payments — Operational** (folder `Corredora DF`, uid `payments-ops-v1`)
 
 Parar:
 
@@ -55,7 +55,7 @@ docker compose -f infrastructure/docker-compose.yml stop grafana
 
 ---
 
-## 4. Estrutura (dashboards as code — skeleton)
+## 4. Estrutura (dashboards as code)
 
 ```text
 infrastructure/observability/grafana/
@@ -64,29 +64,32 @@ infrastructure/observability/grafana/
     dashboards/dashboards.yml
   dashboards/                 # mounted RO → /var/lib/grafana/dashboards
     README.md
-    .gitkeep                  # C2 adiciona payments-ops-v1.json
+    payments-ops-v1.json      # uid congelado payments-ops-v1
 ```
 
 | Convenção | Valor |
 |---|---|
 | Datasource uid | `prometheus` |
 | Provider folder | `Corredora DF` |
-| Futuro dashboard uid | **`payments-ops-v1`** (nunca auto-gerado) |
-| Refresh padrão (C2) | **30s** |
-| Source of truth | Git (mount read-only); UI pode editar localmente, mas o JSON no repo manda |
+| Dashboard uid | **`payments-ops-v1`** (nunca auto-gerado) |
+| Refresh | **30s** |
+| Source of truth | Git (mount read-only) |
+
+Painéis oficiais: Checkout Funnel, Webhook Outcomes, Webhook Latency, Ledger Health — ver [Dashboard Contract](../observability/payment-dashboards.md).
 
 ---
 
-## 5. O que C1 não inclui
+## 5. O que C1/C2 não incluem
 
-- JSON do dashboard Payments
-- Alertas
+- Alertas / Alertmanager
 - Plugins extras
 - Auth externa / SSO
 - Qualquer alteração em `apps/*`
+- Métricas ou painéis fora do contrato D3-A
 
 ---
 
 ## 6. Próximo
 
-**4.1-C2** — adicionar `payments-ops-v1.json` com os quatro painéis do [Dashboard Contract](../observability/payment-dashboards.md).
+**4.1-C3** — documentação do fluxo export → commit (dashboard as code).  
+**4.1-D** — Alertmanager.
