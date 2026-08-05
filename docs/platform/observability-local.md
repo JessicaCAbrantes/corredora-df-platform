@@ -2,9 +2,9 @@
 
 **Status:** Stable (local platform)  
 **Escopo:** scrape local de `GET /metrics` da API via Prometheus no Docker Compose  
-**Fora de escopo:** Grafana, Alertmanager, Dockerfile da API, CD, Kubernetes, produção
+**Fora de escopo:** Alertmanager, Dockerfile da API, CD, Kubernetes, produção
 
-A **aplicação** (FASE 3.4 / 3.5) permanece congelada. Este documento descreve apenas a **plataforma local** que consome os contratos já existentes.
+A **aplicação** (FASE 3.4 / 3.5) permanece congelada. Este documento descreve o **Prometheus local**. Grafana: [grafana-local.md](./grafana-local.md).
 
 ---
 
@@ -12,8 +12,9 @@ A **aplicação** (FASE 3.4 / 3.5) permanece congelada. Este documento descreve 
 
 | Claim | Today |
 |---|---|
-| Prometheus local (Compose) | **Sim** (este marco) |
-| Grafana / Alertmanager | **Não** (4.1-C / 4.1-D) |
+| Prometheus local (Compose) | **Sim** (FASE 4.1-B) |
+| Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1) |
+| Alertmanager | **Não** (4.1-D) |
 | API containerizada | **Não** — API roda no host |
 | Staging / produção | **Não** |
 | Token no repo | Apenas `bearer_token.example` (local-only). O arquivo `bearer_token` é gitignored |
@@ -74,20 +75,24 @@ Contrato da app: [`docs/observability/payment-metrics.md`](../observability/paym
 Na raiz do monorepo (ou em `infrastructure/`):
 
 ```bash
-# Subir Postgres + Prometheus
+# Subir Postgres + Prometheus (+ Grafana se desejado)
 docker compose -f infrastructure/docker-compose.yml up -d
 
-# Só Prometheus (se Postgres já estiver up)
+# Só Prometheus
 docker compose -f infrastructure/docker-compose.yml up -d prometheus
 
+# Prometheus + Grafana
+docker compose -f infrastructure/docker-compose.yml up -d prometheus grafana
+
 # Parar
-docker compose -f infrastructure/docker-compose.yml stop prometheus
+docker compose -f infrastructure/docker-compose.yml stop prometheus grafana
 
 # Parar tudo
 docker compose -f infrastructure/docker-compose.yml down
 ```
 
-UI Prometheus: [http://localhost:9090](http://localhost:9090)
+UI Prometheus: [http://localhost:9090](http://localhost:9090)  
+UI Grafana: [http://localhost:3002](http://localhost:3002) — ver [grafana-local.md](./grafana-local.md)
 
 ---
 
@@ -150,11 +155,11 @@ curl -sS -H "Authorization: Bearer local-corredora-metrics-dev-token" \
 
 - Não abrir `/metrics` sem Bearer.
 - Não apontar este Compose para staging/produção.
-- Não adicionar Grafana/Alertmanager neste PR (4.1-C / 4.1-D).
+- Não adicionar Alertmanager neste PR (4.1-D).
 - Não alterar contratos da aplicação (3.4 / 3.5).
 
 ---
 
 ## 9. Próximo
 
-**4.1-C — Grafana** consome o Prometheus local já scrapeando; painéis devem seguir [`payment-dashboards.md`](../observability/payment-dashboards.md).
+**4.1-C2** — dashboard `payments-ops-v1` no Grafana ([grafana-local.md](./grafana-local.md) · [payment-dashboards.md](../observability/payment-dashboards.md)).

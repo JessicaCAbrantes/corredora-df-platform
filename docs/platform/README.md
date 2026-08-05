@@ -7,6 +7,7 @@ A aplicação (FASE 3) permanece congelada — esta pasta **consome** contratos,
 | Document | Description |
 |---|---|
 | [observability-local.md](./observability-local.md) | Prometheus local via Compose (FASE 4.1-B) |
+| [grafana-local.md](./grafana-local.md) | Grafana local + provisioning (FASE 4.1-C1) |
 
 Contratos da aplicação (somente leitura):
 
