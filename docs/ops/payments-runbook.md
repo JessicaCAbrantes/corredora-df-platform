@@ -2,7 +2,7 @@
 
 Operational procedures for kit-pickup payments in Corredora DF Platform.
 
-> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Loki/Datadog/Grafana alerting). Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C, header `x-correlation-id`), and **process-local payment counters** (FASE 3.5-D1 Metrics Contract v1.0) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [correlation.md](../observability/correlation.md), and [payment-metrics.md](../observability/payment-metrics.md).
+> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, or a hosted observability stack (Prometheus scrape, Grafana, Loki, Datadog, Alertmanager). Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C), **metrics** (FASE 3.5-D1/D2), and **dashboard/alert contracts** (FASE 3.5-D3-A, semantic only — no live panels/alerts) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [§10.6](#106-dashboards--alerts-fase-35-d3-a), [correlation.md](../observability/correlation.md), [payment-metrics.md](../observability/payment-metrics.md), [payment-dashboards.md](../observability/payment-dashboards.md), and [payment-alerts.md](../observability/payment-alerts.md).
 
 ## 1. Objective and limits
 
@@ -19,7 +19,7 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 
 - Implementing dual/previous secrets in code
 - Redis, message queues, workers, Kafka, Outbox
-- Observability **platforms** (Prometheus scrape, log shipping, dashboards, alerting) — FASE 3.5-D2/D3+
+- Observability **platforms** (Prometheus scrape, `/metrics` export, Grafana, Alertmanager, log shipping) — FASE 3.5-D3-B+ / later
 - Docker/Kubernetes production deploy — FASE 3.6+
 - Changing payment domain logic, checkout, or HTTP contract (already C1–C4)
 - Routine SQL that forces `PROCESSED` / `PAID` (not a normal procedure)
@@ -29,7 +29,9 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 - Env / fail-closed: [`docs/setup/environment.md`](../setup/environment.md)
 - Webhook ledger / concurrency / HTTP matrix: [`docs/api/kit-pickup-requests.md`](../api/kit-pickup-requests.md)
 - Payment decision events (canonical): [`docs/observability/payment-events.md`](../observability/payment-events.md)
-- Payment metrics (canonical v1.0): [`docs/observability/payment-metrics.md`](../observability/payment-metrics.md)
+- Payment metrics (canonical): [`docs/observability/payment-metrics.md`](../observability/payment-metrics.md)
+- Payment dashboards (canonical D3-A): [`docs/observability/payment-dashboards.md`](../observability/payment-dashboards.md)
+- Payment alerts (canonical D3-A): [`docs/observability/payment-alerts.md`](../observability/payment-alerts.md)
 - Correlation: [`docs/observability/correlation.md`](../observability/correlation.md)
 - DB seed / backup / checklist: [`docs/database/`](../database/)
 
@@ -221,9 +223,10 @@ Canonical catalog + JSON schema: [`docs/observability/payment-events.md`](../obs
 | Format | One JSON object per line on process **stdout** (`console.info` / `warn` / `error` / `debug` mapped from `category`) |
 | Filter key | Field `event` (e.g. `payment.webhook.payment_confirmed`) |
 | Correlation | Field `correlationId` — see [correlation.md](../observability/correlation.md); header `x-correlation-id` |
-| Metrics (v1.0 + D2) | Process-local counters/histograms + DB-backed RECEIVED gauges — [payment-metrics.md](../observability/payment-metrics.md); **no** scrape/dashboard yet |
+| Metrics (v1.0 + D2) | Process-local counters/histograms + DB-backed RECEIVED gauges — [payment-metrics.md](../observability/payment-metrics.md) |
+| Dashboards / alerts (D3-A) | **Contracts only** — [payment-dashboards.md](../observability/payment-dashboards.md), [payment-alerts.md](../observability/payment-alerts.md); **no** live Grafana/Alertmanager |
 
-There is **no** dedicated log shipper or dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
+There is **no** dedicated log shipper or hosted dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
 
 ### Expected sequences
 
@@ -262,6 +265,61 @@ Bad signature (HTTP 401, no ledger):
 | Suspected secret leak in logs | Any line containing `sk_`, `whsec_`, raw body | Must not happen; rotate if found (§19) |
 
 **Do not** treat free-text application errors as the contract — prefer the structured `event` + `code` + `reason` fields.
+
+---
+
+## 10.6 Dashboards & alerts (FASE 3.5-D3-A)
+
+Canonical contracts:
+
+- Dashboards: [`docs/observability/payment-dashboards.md`](../observability/payment-dashboards.md)
+- Alerts: [`docs/observability/payment-alerts.md`](../observability/payment-alerts.md)
+
+### Honesty (today)
+
+| Exists today? | |
+|---|---|
+| Scrape automático | **Não** |
+| Prometheus / `/metrics` | **Não** (D3-B) |
+| Grafana / Datadog / Loki | **Não** |
+| Alertmanager / paging | **Não** |
+| What D3-A shipped | Semantic **contracts** for panels and alerts |
+
+### How to interpret dashboards
+
+When a visualization tool eventually implements `payments-ops-v1`:
+
+1. Read the panel’s **operational question** in the dashboard contract.
+2. Apply the **aggregation rules** (counters → `rate`/`increase`; histogram → quantile; DB gauges → **`max`**, never `sum` across replicas).
+3. Treat anomalies as hypotheses — confirm with decision logs (`"event":"payment.`) and `correlationId`.
+4. Do not treat `duplicate` volume alone as an incident.
+
+Until scrape exists, approximate the same questions via logs + ledger SQL (see §13–§16).
+
+### How to interpret alerts
+
+```text
+Dashboard panel anomaly
+        │
+        ▼
+Alert (payment-alerts.md catalog)
+        │
+        ▼
+This runbook (section linked by the alert)
+        │
+        ▼
+Troubleshooting (§11–§16)
+```
+
+| Alert id | Start here |
+|---|---|
+| `payment_signature_rejected_spike` | §11 |
+| `payment_ledger_received_stuck` | §13 · §14 |
+| `payment_retryable_elevated` | §12 · §14 |
+| `payment_webhook_latency_high` | §12 |
+| `payment_processing_error_spike` | §12 |
+
+Conditions in the alert contract are **intended** evaluation expressions — they do not fire automatically today.
 
 ---
 

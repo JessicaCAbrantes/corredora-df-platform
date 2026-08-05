@@ -4,7 +4,9 @@
 **Scope:**  
 - **v1.0:** Counters derived from the [Payment Events Contract](./payment-events.md) (v1.1)  
 - **D2:** Webhook processing histogram + DB-backed ledger RECEIVED gauges  
-**Out of scope:** dashboards/alerts (3.5-D3), Prometheus scrape, checkout creation latency, `payment_retryable_pending_total`
+**Out of scope:** live Grafana/Alertmanager, Prometheus scrape / `/metrics` (3.5-D3-B), checkout creation latency, `payment_retryable_pending_total`
+
+**Related (3.5-D3-A):** [payment-dashboards.md](./payment-dashboards.md) · [payment-alerts.md](./payment-alerts.md) — semantic contracts only.
 
 ---
 
@@ -116,7 +118,8 @@ Do **not** use `null`, omit the series, or emit `NaN`.
 | `payment_retryable_pending_total` | No persisted retryable state distinct from `RECEIVED` |
 | `payment_checkout_duration_seconds` | Would measure session **creation** latency, not time-to-paid — rename/clarify if added later |
 | Schema / status index migration | Not required at current volume |
-| Prometheus scrape / dashboards / alerts | D3 |
+| Prometheus scrape / `/metrics` | **D3-B** (platform) |
+| Live Grafana / Alertmanager | After D3-B; contracts frozen in D3-A |
 
 ---
 
