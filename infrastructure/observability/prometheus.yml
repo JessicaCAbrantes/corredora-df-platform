@@ -1,0 +1,26 @@
+# FASE 4.1-B — Local Prometheus scrape of the API /metrics endpoint.
+#
+# Aggregation reminder (operational contract — do not invert in Grafana later):
+# - Counter / Histogram → sum then rate / histogram_quantile across replicas
+# - Gauge DB-backed (payment_ledger_received_*) → max() — never sum replicas
+#
+# Target: API on the Docker host (not containerized in 4.1-B).
+# Auth: Bearer from credentials_file (local secret; never reuse in production).
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: corredora-api
+    metrics_path: /metrics
+    scheme: http
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/bearer_token
+    static_configs:
+      - targets:
+          - host.docker.internal:3001
+        labels:
+          service: api
+          env: local

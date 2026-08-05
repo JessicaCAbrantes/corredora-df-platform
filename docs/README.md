@@ -15,6 +15,7 @@
 | [engineering/](./engineering/) | Manual de engenharia ([handbook](./engineering/engineering-handbook.md) + 10 guias) |
 | [observability/](./observability/) | Contratos de eventos / logs (FASE 3.5-B+) |
 | [ops/](./ops/) | Runbooks operacionais (pagamentos — FASE 3.4-D) |
+| [platform/](./platform/) | Plataforma local / ops stack (FASE 4.1+ — Prometheus, …) |
 | [product/](./product/) | Produto, roadmap, personas |
 | [setup/](./setup/) | Onboarding local e variáveis de ambiente |
 | [ux/](./ux/) | Experiência do usuário e navegação |
@@ -23,6 +24,7 @@
 
 - [Environment variables](./setup/environment.md) — inventário API / Web / Docker / CI
 - [Payments runbook](./ops/payments-runbook.md) — rotação de secrets, smoke, troubleshooting
+- [Observabilidade local (Prometheus)](./platform/observability-local.md) — scrape local de `/metrics` (FASE 4.1-B)
 - [Payment decision events](./observability/payment-events.md) — contrato canônico de logs de pagamento
 - [Roadmap](./roadmap.md) — planejamento de 15 sprints até o MVP
 - [API — índice](./api/README.md) — contrato Frontend ↔ Backend

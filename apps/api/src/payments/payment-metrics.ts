@@ -355,7 +355,7 @@ export class PaymentMetricsRegistry {
 
   listHistogramSnapshots(): PaymentHistogramSnapshot[] {
     const out: PaymentHistogramSnapshot[] = [];
-    for (const [key, hist] of this.histograms.entries()) {
+    for (const key of this.histograms.keys()) {
       const sep = key.indexOf("|");
       const name = key.slice(0, sep) as PaymentOperationalMetricName;
       if (name !== "payment_webhook_processing_duration_seconds") continue;
