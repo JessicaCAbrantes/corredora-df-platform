@@ -1,0 +1,15 @@
+# FASE 4.1-C1 — Grafana datasource (local only).
+# Grafana talks to Prometheus on the Compose network — not to the API /metrics bearer.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    uid: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 30s
+      httpMethod: POST

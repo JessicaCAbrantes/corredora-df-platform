@@ -1,0 +1,16 @@
+# FASE 4.1-C1 — Dashboard provider (file-based, git is source of truth).
+# Official dashboards are mounted read-only from infrastructure/observability/grafana/dashboards.
+apiVersion: 1
+
+providers:
+  - name: corredora-official
+    orgId: 1
+    folder: Corredora DF
+    folderUid: corredora-df
+    type: file
+    disableDeletion: true
+    allowUiUpdates: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

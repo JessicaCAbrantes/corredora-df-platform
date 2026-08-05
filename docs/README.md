@@ -25,6 +25,7 @@
 - [Environment variables](./setup/environment.md) — inventário API / Web / Docker / CI
 - [Payments runbook](./ops/payments-runbook.md) — rotação de secrets, smoke, troubleshooting
 - [Observabilidade local (Prometheus)](./platform/observability-local.md) — scrape local de `/metrics` (FASE 4.1-B)
+- [Grafana local](./platform/grafana-local.md) — provisioning Compose (FASE 4.1-C1)
 - [Payment decision events](./observability/payment-events.md) — contrato canônico de logs de pagamento
 - [Roadmap](./roadmap.md) — planejamento de 15 sprints até o MVP
 - [API — índice](./api/README.md) — contrato Frontend ↔ Backend

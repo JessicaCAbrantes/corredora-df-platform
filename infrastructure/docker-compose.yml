@@ -1,8 +1,9 @@
-# Local development PostgreSQL + Prometheus scrape (FASE 4.1-B).
+# Local development PostgreSQL + Prometheus + Grafana (FASE 4.1-B / 4.1-C1).
 #
 # Postgres: local DX for the API.
 # Prometheus: scrapes GET /metrics on the API running on the host
 #             (API is NOT containerized in this phase).
+# Grafana: UI on localhost:3002 — datasource/provider provisioned from git.
 #
 # Before `up`: copy the local metrics bearer (see docs/platform/observability-local.md)
 #   cp infrastructure/observability/secrets/bearer_token.example \
@@ -11,7 +12,8 @@
 # API .env must enable metrics with the SAME token:
 #   METRICS_ENABLED=true
 #   METRICS_BEARER_TOKEN=local-corredora-metrics-dev-token
-
+#
+# Grafana local login defaults to admin/admin — change after first login (local only).
 services:
   postgres:
     image: postgres:16-alpine
@@ -47,6 +49,27 @@ services:
       # Docker Desktop (Windows/macOS) already provides host.docker.internal.
       - "host.docker.internal:host-gateway"
 
+  grafana:
+    image: grafana/grafana:11.3.1
+    depends_on:
+      - prometheus
+    ports:
+      # Avoid Next.js (:3000) and API (:3001).
+      - "3002:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3002
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: ""
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    # Local-only defaults — change password after first login; never use in production.
+
 volumes:
   postgres_data:
   prometheus_data:
+  grafana_data:
