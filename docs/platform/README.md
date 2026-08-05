@@ -9,6 +9,7 @@ A aplicação (FASE 3) permanece congelada — esta pasta **consome** contratos,
 | [observability-local.md](./observability-local.md) | Prometheus local via Compose (FASE 4.1-B) |
 | [grafana-local.md](./grafana-local.md) | Grafana local + provisioning + dashboard (FASE 4.1-C1 / C2) |
 | [dashboard-as-code.md](./dashboard-as-code.md) | Fluxo edit → export → commit (FASE 4.1-C3) |
+| [alertmanager-audit.md](./alertmanager-audit.md) | Auditoria Alertmanager — decisões congeladas (FASE 4.1-D1) |
 
 Contratos da aplicação (somente leitura):
 
