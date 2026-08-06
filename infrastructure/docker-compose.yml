@@ -1,9 +1,11 @@
-# Local development PostgreSQL + Prometheus + Grafana (FASE 4.1-B / 4.1-C1).
+# Local development PostgreSQL + Prometheus + Grafana + Alertmanager
+# (FASE 4.1-B / 4.1-C1 / 4.1-D2).
 #
 # Postgres: local DX for the API.
 # Prometheus: scrapes GET /metrics on the API running on the host
 #             (API is NOT containerized in this phase).
 # Grafana: UI on localhost:3002 — datasource/provider provisioned from git.
+# Alertmanager: UI on localhost:9093 — local notify path only (dummy webhook).
 #
 # Before `up`: copy the local metrics bearer (see docs/platform/observability-local.md)
 #   cp infrastructure/observability/secrets/bearer_token.example \
@@ -31,8 +33,33 @@ services:
       timeout: 5s
       retries: 5
 
+  alert-webhook:
+    # Local dummy receiver — logs Alertmanager POST bodies to container stdout.
+    # Not Slack/Teams/email/PagerDuty. No host port published (compose-internal only).
+    image: mendhak/http-https-echo:31
+    environment:
+      HTTP_PORT: "8080"
+      LOG_IGNORE_PATH: /favicon.ico
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    depends_on:
+      - alert-webhook
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --web.listen-address=:9093
+      - --cluster.listen-address=
+
   prometheus:
     image: prom/prometheus:v2.55.1
+    depends_on:
+      - alertmanager
     ports:
       - "9090:9090"
     volumes:
@@ -73,3 +100,4 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
