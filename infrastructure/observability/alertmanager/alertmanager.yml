@@ -1,0 +1,31 @@
+# FASE 4.1-D2 — Local Alertmanager (no real paging).
+#
+# Grouping frozen in docs/platform/alertmanager-audit.md (4.1-D1):
+#   group_by: [alertname, provider]
+#   group_wait: 30s | group_interval: 5m | repeat_interval: 4h
+#
+# Receiver: ops-local → internal dummy webhook only (no Slack/Teams/email/PagerDuty).
+# Alert rules: 4.1-D3 (not in this file).
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: ops-local
+  group_by: ["alertname", "provider"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: ops-local
+    - matchers:
+        - severity = warning
+      receiver: ops-local
+
+receivers:
+  - name: ops-local
+    webhook_configs:
+      - url: http://alert-webhook:8080/
+        send_resolved: true

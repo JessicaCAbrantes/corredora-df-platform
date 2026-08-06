@@ -15,7 +15,7 @@ Consome o Prometheus de [observability-local.md](./observability-local.md). Flux
 | Grafana local (Compose) | **Sim** — (FASE 4.1-C1) |
 | Dashboard `payments-ops-v1` | **Sim** — JSON em `infrastructure/observability/grafana/dashboards/payments-ops-v1.json` (FASE 4.1-C2) |
 | Dashboard as code (processo) | **Sim** — [dashboard-as-code.md](./dashboard-as-code.md) (FASE 4.1-C3) |
-| Alertmanager / Grafana Cloud | **Não** — audit: [alertmanager-audit.md](./alertmanager-audit.md) (4.1-D1) |
+| Alertmanager / Grafana Cloud | **Não** Cloud — AM local: [alertmanager-local.md](./alertmanager-local.md) (4.1-D2) |
 | Produção / SSO | **Não** |
 
 ---
@@ -94,4 +94,4 @@ Para alterar o JSON oficial: [dashboard-as-code.md](./dashboard-as-code.md) (edi
 
 ## 6. Próximo
 
-**4.1-D2** — Alertmanager provisioning ([alertmanager-audit.md](./alertmanager-audit.md)).
+**4.1-D3** — Alert Rules ([alertmanager-audit.md](./alertmanager-audit.md) · [alertmanager-local.md](./alertmanager-local.md)).

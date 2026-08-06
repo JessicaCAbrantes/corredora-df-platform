@@ -8,19 +8,19 @@ Este documento **congela decisões** antes de qualquer provisioning (4.1-D2). Co
 
 ---
 
-## 1. Honesty (hoje — tip `eb16e7e` / pós-C3)
+## 1. Honesty (pós-D2 — tip local)
 
 | Claim | Today |
 |---|---|
 | Prometheus local (Compose) | **Sim** — `prom/prometheus:v2.55.1` · `:9090` |
 | Grafana + `payments-ops-v1` | **Sim** |
 | Dashboard as code | **Sim** |
-| `rule_files` / recording rules | **Não** |
-| Alertmanager container | **Não** |
-| `alerting:` no `prometheus.yml` | **Não** |
+| `rule_files` / recording rules | **Não** (4.1-D3) |
+| Alertmanager container | **Sim** — [alertmanager-local.md](./alertmanager-local.md) (4.1-D2) |
+| `alerting:` no `prometheus.yml` | **Sim** (wire AM; sem regras ainda) |
 | Slack / Teams / PagerDuty / e-mail | **Não** |
 | Paging / on-call | **Não** |
-| O que este documento faz | Congela **como** a plataforma vai notificar localmente — sem implementar ainda |
+| O que este documento faz | Congela **como** a plataforma notifica localmente — provisioning em D2; regras em D3 |
 
 Contrato semântico da app: [payment-alerts.md](../observability/payment-alerts.md) (FASE 3.5-D3-A). Expressões lá são **intended**; D3 materializa regras Prometheus; D2 sobe o Alertmanager.
 
@@ -198,27 +198,25 @@ Detalhamento operacional com screenshots/comandos: **4.1-D4** (Receivers + Runbo
 
 ---
 
-## 9. Portas e layout previsto (não implementado em D1)
+## 9. Portas e layout (D2 implementado)
 
-| Serviço | Porta (congelada / prevista) |
+| Serviço | Porta |
 |---|---|
 | API | 3001 |
 | Grafana | 3002 |
 | Prometheus | 9090 |
-| **Alertmanager** | **9093** (D2) |
-
-Layout de arquivos **previsto** (D2+; ainda não existe):
+| **Alertmanager** | **9093** |
 
 ```text
 infrastructure/observability/
-  prometheus.yml              # + alerting + rule_files (D2/D3)
+  prometheus.yml              # alerting → alertmanager:9093 (D2); rule_files (D3)
   alertmanager/
     alertmanager.yml          # D2
   rules/
     payments-alerts.yml       # D3 — só catálogo D3-A
-  receivers/                  # opcional — dummy webhook (D2/D4)
 ```
 
+Detalhe operacional: [alertmanager-local.md](./alertmanager-local.md).
 ---
 
 ## 10. Fora do escopo (toda a 4.1-D)
@@ -238,16 +236,16 @@ infrastructure/observability/
 ## 11. Roadmap 4.1-D (granularidade por PR)
 
 ```text
-4.1-D1  Alertmanager Audit          ← este documento (docs only)
+4.1-D1  Alertmanager Audit          ✅ docs
         │
         ▼
-4.1-D2  Alertmanager Provisioning   Compose + alertmanager.yml + wire Prometheus
+4.1-D2  Alertmanager Provisioning   ← Compose + alertmanager.yml + wire Prometheus
         │
         ▼
 4.1-D3  Alert Rules                 rule_files com os 5 alertas D3-A
         │
         ▼
-4.1-D4  Receivers + Runbooks        dummy webhook/log + procedimento silence + links ops
+4.1-D4  Receivers + Runbooks        polish silence + links ops (dummy já em D2)
 ```
 
 Uma capacidade nova por PR. Sem misturar infra + regras + receivers reais no mesmo PR.

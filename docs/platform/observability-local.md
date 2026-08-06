@@ -15,7 +15,7 @@ A **aplicação** (FASE 3.4 / 3.5) permanece congelada. Este documento descreve 
 | Prometheus local (Compose) | **Sim** (FASE 4.1-B) |
 | Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1 / C2) |
 | Dashboard as code | **Sim** — [dashboard-as-code.md](./dashboard-as-code.md) (FASE 4.1-C3) |
-| Alertmanager | **Não** — auditoria: [alertmanager-audit.md](./alertmanager-audit.md) (4.1-D1); provisioning em 4.1-D2 |
+| Alertmanager | **Sim** — [alertmanager-local.md](./alertmanager-local.md) (4.1-D2); audit: [alertmanager-audit.md](./alertmanager-audit.md) |
 | API containerizada | **Não** — API roda no host |
 | Staging / produção | **Não** |
 | Token no repo | Apenas `bearer_token.example` (local-only). O arquivo `bearer_token` é gitignored |
@@ -82,18 +82,19 @@ docker compose -f infrastructure/docker-compose.yml up -d
 # Só Prometheus
 docker compose -f infrastructure/docker-compose.yml up -d prometheus
 
-# Prometheus + Grafana
-docker compose -f infrastructure/docker-compose.yml up -d prometheus grafana
+# Prometheus + Grafana + Alertmanager
+docker compose -f infrastructure/docker-compose.yml up -d prometheus grafana alertmanager alert-webhook
 
 # Parar
-docker compose -f infrastructure/docker-compose.yml stop prometheus grafana
+docker compose -f infrastructure/docker-compose.yml stop prometheus grafana alertmanager alert-webhook
 
 # Parar tudo
 docker compose -f infrastructure/docker-compose.yml down
 ```
 
 UI Prometheus: [http://localhost:9090](http://localhost:9090)  
-UI Grafana: [http://localhost:3002](http://localhost:3002) — ver [grafana-local.md](./grafana-local.md)
+UI Grafana: [http://localhost:3002](http://localhost:3002) — ver [grafana-local.md](./grafana-local.md)  
+UI Alertmanager: [http://localhost:9093](http://localhost:9093) — ver [alertmanager-local.md](./alertmanager-local.md)
 
 ---
 
@@ -156,12 +157,13 @@ curl -sS -H "Authorization: Bearer local-corredora-metrics-dev-token" \
 
 - Não abrir `/metrics` sem Bearer.
 - Não apontar este Compose para staging/produção.
-- Não adicionar Alertmanager neste PR (4.1-D).
+- Não adicionar `rule_files` neste doc (4.1-D3).
 - Não alterar contratos da aplicação (3.4 / 3.5).
 
 ---
 
 ## 9. Próximo
 
-**4.1-D2** — Alertmanager provisioning (após audit [alertmanager-audit.md](./alertmanager-audit.md)).  
+**4.1-D3** — Alert Rules.  
+Alertmanager: [alertmanager-local.md](./alertmanager-local.md) · audit: [alertmanager-audit.md](./alertmanager-audit.md).  
 Grafana / dashboard as code: [grafana-local.md](./grafana-local.md) · [dashboard-as-code.md](./dashboard-as-code.md).
