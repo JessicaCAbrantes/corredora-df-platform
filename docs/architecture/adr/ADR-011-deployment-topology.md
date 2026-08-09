@@ -28,25 +28,32 @@ Qual é a **menor infraestrutura** capaz de colocar o Corredora DF em um **stagi
 
 Adotar **B — VPS + Docker Compose** como topologia do **primeiro ambiente fora do laptop (staging)**.
 
+> **Escopo temporal (congelado):** VPS + Docker Compose é a decisão para o **primeiro ambiente real** (staging).  
+> **Não** é obrigação arquitetural permanente nem “a arquitetura definitiva”.  
+> Evoluir para PaaS split, orquestrador gerenciado ou outra topologia exige **novo ADR** — não reinterpretar silenciosamente este documento.
+
 ### Topologia (staging)
 
 ```text
 Internet
    │
    ▼
-Reverse proxy + TLS (Caddy ou Nginx)
+HTTPS — reverse proxy + TLS (obrigatório se exposto à Internet)
    │
    ├── Web  (Next.js — apps/web)
    │
    └── API  (NestJS — apps/api)
          │
          ├── PostgreSQL
-         └── GET /metrics  (fail-closed; Bearer; token ≠ local laptop)
+         ├── GET /metrics  (fail-closed; Bearer; token ≠ local laptop)
+         └── Logs (stdout / host — sem stack obs hospedada neste corte)
 ```
+
+**TLS:** obrigatório em staging público. A tecnologia concreta do proxy (Caddy, Nginx, Traefik, …) **não** é fixada aqui — fica para o escopo de **4.2-C**.
 
 ### Princípios do primeiro corte
 
-1. **Um** host (VPS), **um** Compose de aplicação (web + api + postgres + proxy).
+1. **Um** host (VPS), **um** Compose de aplicação (web + api + postgres + proxy TLS).
 2. Compose **local** de FASE 4.1 (Postgres + obs) permanece DX no laptop — **não** é o staging.
 3. Staging tem **URL pública HTTPS**, **banco separado**, **secrets separados** (nunca no Git).
 4. Deploy inicial pode ser **manual** (SSH + `compose up` / pull de imagem ou build no host); CD via Actions vem **depois** (ADR-010), orquestrando o mesmo Compose — sem mudar a topologia.
