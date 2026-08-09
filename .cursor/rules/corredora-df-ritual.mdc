@@ -1,0 +1,38 @@
+---
+description: Corredora DF — ritual operacional (Cloud Agents / Slack / local)
+alwaysApply: true
+---
+
+# Corredora DF — regra operacional
+
+Pedido no Slack, no Desktop ou no Cloud Agent **não** é autorização automática para implementar.
+
+## Sempre
+
+1. **Nunca** implementar diretamente em `master`.
+2. Trabalhar em **feature branch**.
+3. Antes de uma capacidade arquitetural nova: **auditoria somente leitura**.
+4. **Aguardar aprovação de escopo** antes de código/YAML de implementação.
+5. **PR pequeno** — uma capacidade por PR.
+6. **Não reabrir** fases congeladas (FASE 3 aplicação; FASE 4.1 plataforma local) sem decisão explícita.
+7. **Não alterar** contratos congelados (payments, metrics, events, dashboards, alerts) sem aprovação explícita.
+8. Se o pedido exigir secret, canal externo, ou expandir escopo → **parar e reportar**.
+
+## Ritual
+
+```text
+auditoria → escopo → implementação → review → merge → sync → checkpoint
+```
+
+## Níveis de pedido (Slack)
+
+| Nível | Exemplo | Agente pode |
+|---|---|---|
+| Leitura | `summarize the latest master commit` | Só ler / responder |
+| Auditoria | `audit … Read-only. Do not modify files or create commits.` | Só inventário / relatório |
+| Execução | `implement the approved scope… Create a feature branch. Do not modify master.` | Implementar **somente** o escopo aprovado |
+
+## Integração
+
+- Source control deste projeto: **GitHub** (`JessicaCAbrantes/corredora-df-platform`) — não GitLab.
+- Respeitar **branch protection** de `master`; não contornar aprovação humana.
