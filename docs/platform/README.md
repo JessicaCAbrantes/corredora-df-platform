@@ -15,6 +15,7 @@ A aplicação (FASE 3) permanece congelada — esta pasta **consome** contratos,
 | [alert-rules-local.md](./alert-rules-local.md) | Prometheus rule_files — 5 alertas D3-A (FASE 4.1-D3) |
 | [receivers-runbooks-audit.md](./receivers-runbooks-audit.md) | Auditoria Receivers + Runbooks (FASE 4.1-D4) |
 | [alertmanager-ops.md](./alertmanager-ops.md) | Ops: mapa, silence, smoke, anti-storm (FASE 4.1-D4) |
+| [deployment-environment-audit.md](./deployment-environment-audit.md) | Auditoria Deploy & Ambientes (FASE 4.2-A) |
 
 Contratos da aplicação (somente leitura):
 
