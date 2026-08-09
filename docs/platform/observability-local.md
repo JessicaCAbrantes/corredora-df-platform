@@ -15,7 +15,8 @@ A **aplicação** (FASE 3.4 / 3.5) permanece congelada. Este documento descreve 
 | Prometheus local (Compose) | **Sim** (FASE 4.1-B) |
 | Grafana local (Compose) | **Sim** — [grafana-local.md](./grafana-local.md) (FASE 4.1-C1 / C2) |
 | Dashboard as code | **Sim** — [dashboard-as-code.md](./dashboard-as-code.md) (FASE 4.1-C3) |
-| Alertmanager | **Sim** — [alertmanager-local.md](./alertmanager-local.md) (4.1-D2); audit: [alertmanager-audit.md](./alertmanager-audit.md) |
+| Alertmanager | **Sim** — [alertmanager-local.md](./alertmanager-local.md) (4.1-D2) |
+| Alert rules (D3-A) | **Sim** — [alert-rules-local.md](./alert-rules-local.md) (4.1-D3) |
 | API containerizada | **Não** — API roda no host |
 | Staging / produção | **Não** |
 | Token no repo | Apenas `bearer_token.example` (local-only). O arquivo `bearer_token` é gitignored |
@@ -164,6 +165,6 @@ curl -sS -H "Authorization: Bearer local-corredora-metrics-dev-token" \
 
 ## 9. Próximo
 
-**4.1-D3** — Alert Rules.  
-Alertmanager: [alertmanager-local.md](./alertmanager-local.md) · audit: [alertmanager-audit.md](./alertmanager-audit.md).  
+**4.1-D4** — Receivers + Runbooks.  
+Alertmanager: [alertmanager-local.md](./alertmanager-local.md) · Rules: [alert-rules-local.md](./alert-rules-local.md).  
 Grafana / dashboard as code: [grafana-local.md](./grafana-local.md) · [dashboard-as-code.md](./dashboard-as-code.md).
