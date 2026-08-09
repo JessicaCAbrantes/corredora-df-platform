@@ -20,20 +20,21 @@ MAJOR.MINOR.PATCH
 ## Ambientes
 
 ```text
-local       → desenvolvimento (pnpm dev)
-staging     → homologação (branch develop)
-production  → produção (branch main)
+local       → desenvolvimento (pnpm + Compose local — FASE 4.1)
+staging     → primeiro ambiente fora do laptop (ADR-011: VPS + Compose) — a provisionar
+production  → mesma topologia, ambiente separado — direção apenas (ADR-011)
 ```
+
+Branch de integração/release no GitHub: **`master`** (não `develop`/`main`).
 
 ## Fluxo de release
 
 ```text
-1. Features mergeadas em develop
-2. QA em staging
-3. PR de develop → main
-4. Tag de versão criada
-5. Deploy automático para produção
-6. Devlog atualizado
+1. Features mergeadas em master via PR
+2. QA em staging (quando existir — ADR-011)
+3. Tag de versão em master
+4. Deploy para produção (manual no primeiro corte; CD depois via ADR-010)
+5. Devlog atualizado
 ```
 
 ### Passo a passo
@@ -41,47 +42,39 @@ production  → produção (branch main)
 **1. Preparar release**
 
 ```bash
-git checkout develop
-git pull origin develop
-pnpm --filter web build    # verificar build
-pnpm --filter web lint     # verificar lint
+git checkout master
+git pull origin master
+pnpm --filter web build
+pnpm --filter api build
 ```
 
-**2. Criar PR para main**
+**2. Criar PR / tag conforme o ritual do time**
 
 ```markdown
 ## Release v1.1.0
 
 ### Novidades
-- Listagem de eventos
-- Página de parceiros
-
-### Correções
-- Redirect após login
+- …
 
 ### Test plan
-- [ ] Build passa
-- [ ] Testado em staging
+- [ ] CI verde
+- [ ] Testado em staging (quando existir)
 - [ ] Sem regressões
 ```
 
 **3. Merge e tag**
 
 ```bash
-git checkout main
-git merge develop
+git checkout master
+git pull origin master
 git tag -a v1.1.0 -m "Release v1.1.0"
-git push origin main --tags
+git push origin master --tags
 ```
 
 **4. Deploy**
 
-Deploy automático via CI/CD (futuro) ou manual:
-
-```bash
-pnpm --filter web build
-pnpm --filter web start
-```
+No primeiro corte (ADR-011): deploy **manual** no VPS de staging/prod conforme runbook de infraestrutura (a criar em 4.2-C+).  
+CD automático via GitHub Actions permanece o alvo do [ADR-010](../architecture/adr/ADR-010-cicd-github-actions.md), sem mudar a topologia Compose.
 
 **5. Pós-release**
 
@@ -94,11 +87,11 @@ pnpm --filter web start
 Para correções urgentes em produção:
 
 ```text
-1. Branch fix/* a partir de main
+1. Branch fix/* a partir de master
 2. Correção + teste
-3. PR direto para main
+3. PR direto para master
 4. Tag PATCH (ex.: v1.0.1)
-5. Merge de main → develop (backport)
+5. Deploy no ambiente de produção (manual no primeiro corte)
 ```
 
 ## Changelog
@@ -121,18 +114,18 @@ Manter histórico de mudanças por versão. Formato:
 Se uma release apresentar problemas críticos:
 
 ```bash
-git checkout main
+git checkout master
 git revert <commit-da-release>
-git push origin main
-# ou redeploy da tag anterior
+git push origin master
+# ou redeploy da tag anterior no VPS
 ```
 
 ## Checklist de release
 
-- [ ] Todas as features do sprint mergeadas em develop
+- [ ] Features do sprint mergeadas em `master`
 - [ ] Build e lint passam
-- [ ] Testado em staging
-- [ ] PR de release aprovado
+- [ ] Testado em staging (quando existir — ADR-011)
+- [ ] PR / tag aprovados
 - [ ] Tag criada
 - [ ] Deploy realizado
 - [ ] Devlog atualizado

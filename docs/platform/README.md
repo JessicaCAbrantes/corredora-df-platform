@@ -17,6 +17,8 @@ A aplicação (FASE 3) permanece congelada — esta pasta **consome** contratos,
 | [alertmanager-ops.md](./alertmanager-ops.md) | Ops: mapa, silence, smoke, anti-storm (FASE 4.1-D4) |
 | [deployment-environment-audit.md](./deployment-environment-audit.md) | Auditoria Deploy & Ambientes (FASE 4.2-A) |
 
+Decisão de topologia (FASE 4.2-B): [ADR-011](../architecture/adr/ADR-011-deployment-topology.md).
+
 Contratos da aplicação (somente leitura):
 
 - [Payment metrics](../observability/payment-metrics.md)

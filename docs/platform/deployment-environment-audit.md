@@ -225,18 +225,12 @@ ADR-010 **permite** A–C desde que Actions orquestre; **não** impõe K8s.
 ### Não fazer agora
 Qualquer implementação de Docker/CD/cloud/receiver/métricas/reabrir 3 ou 4.1.
 
-### Fazer como **4.2-B** (proposta)
+### Fazer como **4.2-B** (feito — ADR proposto)
 
-**FASE 4.2-B — Deployment Topology Decision (ADR)**
+**FASE 4.2-B — Deployment Topology Decision:** [ADR-011](../architecture/adr/ADR-011-deployment-topology.md)
 
-Entrega **somente documental**:
-
-1. ADR novo (ex. ADR-011) escolhendo **uma** topologia alvo para o *primeiro* ambiente fora do laptop (provavelmente A ou B).
-2. Honesty: alinhar git-flow/release docs à realidade (`master`) **ou** decidir migrar para `develop`/`main` — explícito.
-3. Definition of “Staging mínimo”: o que precisa existir para o primeiro deploy (web, api, db, migrate, secrets, HTTPS).
-4. Lista explícita do que **fica fora** do primeiro corte (obs hospedada, HA, multi-region, …).
-
-Só **depois** desse ADR: 4.2-C = menor implementação que materialize *um* caminho fino (ex.: um Dockerfile **ou** um PaaS preview) — um PR de cada vez.
+Decisão proposta: **VPS + Docker Compose** para o primeiro staging.  
+Próximo após **Aceito**: **4.2-C** — menor PR de implementação (Compose de aplicação + docs), sem produção.
 
 ---
 

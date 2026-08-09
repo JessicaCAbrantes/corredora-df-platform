@@ -2,24 +2,30 @@
 
 Como versionamos e entregamos código.
 
+> **Honesty (FASE 4.2-B / ADR-011):** o repositório GitHub usa **`master`** como branch de integração e release. Não introduzimos `develop` / `main` só porque docs antigos mencionavam esse modelo.
+
 ## Branches
 
 ```text
-main          → produção (protegida)
-develop       → integração contínua
-feat/*        → novas funcionalidades
-fix/*         → correções
-chore/*       → tarefas de manutenção
-docs/*        → documentação
+master            → integração + linha de release (protegida)
+feature/*         → novas funcionalidades de produto
+platform/*        → plataforma / infra (docs e compose)
+hardening/*       → endurecimento
+fix/*             → correções
+docs/*            → documentação
+chore/*           → manutenção
 ```
 
 ### Nomenclatura
 
 ```text
 feat/events-listing
+feature/kit-pickup-mvp
+platform/observability-prometheus-local-4.1-b
+hardening/payments-fail-closed
 fix/login-redirect
-chore/update-dependencies
 docs/engineering-manual
+chore/update-dependencies
 ```
 
 ## Commits
@@ -60,12 +66,13 @@ refactor(events): extract EventCard to feature components
 
 ## Pull Requests
 
-1. Criar branch a partir de `develop`.
-2. Implementar a mudança.
+1. Criar branch a partir de **`master`**.
+2. Implementar a mudança (após auditoria/escopo quando for capacidade arquitetural).
 3. Abrir PR com título no formato Conventional Commits.
 4. Preencher descrição: **o que**, **por que**, **como testar**.
 5. Aguardar review (mínimo 1 aprovação).
-6. Merge via squash em `develop`.
+6. Merge em **`master`** (respeitar branch protection — não contornar).
+7. Sync local: `git checkout master && git pull` e remover a branch de feature.
 
 ### Template de PR
 
@@ -74,18 +81,27 @@ refactor(events): extract EventCard to feature components
 - Breve descrição da mudança
 
 ## Test plan
-- [ ] Build passa (`pnpm --filter web build`)
-- [ ] Testado localmente em http://localhost:3000
-- [ ] Sem regressões visuais
+- [ ] Build / checks relevantes passam
+- [ ] Testado localmente quando aplicável
+- [ ] Sem regressões
 ```
 
-## Fluxo de release
+## Fluxo
 
 ```text
-feat/* → develop → main (release)
+feature|platform|hardening|…  →  PR  →  master  →  sync / checkpoint
 ```
 
-Releases de `develop` para `main` seguem o processo descrito em `10-release-process.md`.
+Release / tag: ver [10-release-process.md](./10-release-process.md).  
+Topologia de staging/prod: [ADR-011](../architecture/adr/ADR-011-deployment-topology.md).
+
+## Ritual arquitetural
+
+```text
+auditoria → aprovação de escopo → implementação → review → merge → sync → checkpoint
+```
+
+Não reabrir fases/contratos congelados sem decisão explícita.
 
 ## Devlog
 
