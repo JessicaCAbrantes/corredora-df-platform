@@ -85,4 +85,5 @@ docker compose -f infrastructure/docker-compose.yml restart prometheus
 
 ## 6. Próximo
 
-**4.1-D4** — polish receivers + runbooks (silence / ops). Sem paging real.
+Camada local de alertas documentada em [alertmanager-ops.md](./alertmanager-ops.md) (4.1-D4).  
+Próximos passos de plataforma (se houver) ficam fora deste arquivo — sem paging real neste marco.

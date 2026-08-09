@@ -165,6 +165,6 @@ curl -sS -H "Authorization: Bearer local-corredora-metrics-dev-token" \
 
 ## 9. Próximo
 
-**4.1-D4** — Receivers + Runbooks.  
-Alertmanager: [alertmanager-local.md](./alertmanager-local.md) · Rules: [alert-rules-local.md](./alert-rules-local.md).  
+Ops Alertmanager (silence / smoke): [alertmanager-ops.md](./alertmanager-ops.md).  
+Rules: [alert-rules-local.md](./alert-rules-local.md).  
 Grafana / dashboard as code: [grafana-local.md](./grafana-local.md) · [dashboard-as-code.md](./dashboard-as-code.md).

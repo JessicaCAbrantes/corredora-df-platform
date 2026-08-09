@@ -2,7 +2,7 @@
 
 Operational procedures for kit-pickup payments in Corredora DF Platform.
 
-> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, Grafana, Alertmanager, Loki, Datadog, or a managed Prometheus server. Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C), **metrics** (FASE 3.5-D1/D2), **dashboard/alert contracts** (FASE 3.5-D3-A), and optional **`GET /metrics`** Prometheus text export (FASE 3.5-D3-B, fail-closed / bearer) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [§10.6](#106-dashboards--alerts-fase-35-d3-a), [payment-metrics.md](../observability/payment-metrics.md).
+> **Honesty rule:** this runbook describes what the system supports **today**. It does **not** claim dual-secret rotation, zero-downtime cutovers, Redis, queues, automatic Stripe↔DB reconciliation, a manual “confirm payment” API, Grafana Cloud, Loki, Datadog, Alertmanager **paging** (Slack/Teams/e-mail/PagerDuty), or production HA. Structured **payment decision logs** (FASE 3.5-B), **correlation IDs** (FASE 3.5-C), **metrics** (FASE 3.5-D1/D2), **dashboard/alert contracts** (FASE 3.5-D3-A), optional **`GET /metrics`** (FASE 3.5-D3-B), and the **local** observability stack (Prometheus / Grafana / Alertmanager + rules — FASE 4.1, see [docs/platform/](../platform/)) **are** available — see [§10.5](#105-decision-logs-fase-35-b), [§10.6](#106-dashboards--alerts-fase-35-d3-a), [payment-metrics.md](../observability/payment-metrics.md).
 
 ## 1. Objective and limits
 
@@ -19,7 +19,8 @@ Operational procedures for kit-pickup payments in Corredora DF Platform.
 
 - Implementing dual/previous secrets in code
 - Redis, message queues, workers, Kafka, Outbox
-- Observability **platforms** (Grafana, Alertmanager, Prometheus server, ServiceMonitor, log shipping) — later
+- Observability **hosted / production** platforms (Grafana Cloud, paging integrations, ServiceMonitor, log shipping) — later  
+  Local stack (Compose): [docs/platform/](../platform/) (Prometheus, Grafana, Alertmanager + rules)
 - Docker/Kubernetes production deploy — FASE 3.6+
 - Changing payment domain logic, checkout, or HTTP contract (already C1–C4)
 - Routine SQL that forces `PROCESSED` / `PAID` (not a normal procedure)
@@ -224,7 +225,7 @@ Canonical catalog + JSON schema: [`docs/observability/payment-events.md`](../obs
 | Filter key | Field `event` (e.g. `payment.webhook.payment_confirmed`) |
 | Correlation | Field `correlationId` — see [correlation.md](../observability/correlation.md); header `x-correlation-id` |
 | Metrics (v1.0 + D2) | Process-local counters/histograms + DB-backed RECEIVED gauges — [payment-metrics.md](../observability/payment-metrics.md) |
-| Dashboards / alerts (D3-A) | **Contracts only** — [payment-dashboards.md](../observability/payment-dashboards.md), [payment-alerts.md](../observability/payment-alerts.md); **no** live Grafana/Alertmanager |
+| Dashboards / alerts (D3-A) | Contracts: [payment-dashboards.md](../observability/payment-dashboards.md), [payment-alerts.md](../observability/payment-alerts.md). **Local** Grafana + Prometheus rules + Alertmanager: [docs/platform/](../platform/) (dummy receiver only — no paging) |
 
 There is **no** dedicated log shipper or hosted dashboard in this phase. On the host / container, search API stdout/stderr for `"event":"payment.`.
 
@@ -279,30 +280,31 @@ Canonical contracts:
 
 | Exists today? | |
 |---|---|
-| Scrape automático / Prometheus server | **Não** |
-| `GET /metrics` (optional) | **Sim** — off by default (`METRICS_ENABLED=false` → 404); when enabled, Bearer required |
-| Grafana / Datadog / Loki / Alertmanager | **Não** |
+| `GET /metrics` (optional) | **Sim** — off by default; when enabled, Bearer required |
+| Prometheus / Grafana / Alertmanager **local** (FASE 4.1) | **Sim** — [observability-local.md](../platform/observability-local.md) · [grafana-local.md](../platform/grafana-local.md) · [alertmanager-local.md](../platform/alertmanager-local.md) · [alert-rules-local.md](../platform/alert-rules-local.md) |
+| Dashboard `payments-ops-v1` (local) | **Sim** — as code |
+| Alert rules D3-A avaliadas no Prometheus local | **Sim** — 5 rules → Alertmanager |
+| Receiver de entrega | **Só** dummy `ops-local` (logs Compose) — [alertmanager-ops.md](../platform/alertmanager-ops.md) |
+| Slack / Teams / e-mail / PagerDuty / paging real | **Não** |
 | What D3-A shipped | Semantic **contracts** for panels and alerts |
-| What D3-B shipped | Fail-closed Prometheus text export of the metrics contract |
+| What D3-B shipped | Fail-closed Prometheus text export |
 
 ### How to interpret dashboards
 
-When a visualization tool eventually implements `payments-ops-v1`:
+When using local Grafana `payments-ops-v1` (or any tool that implements the contract):
 
 1. Read the panel’s **operational question** in the dashboard contract.
 2. Apply the **aggregation rules** (counters → `rate`/`increase`; histogram → quantile; DB gauges → **`max`**, never `sum` across replicas).
 3. Treat anomalies as hypotheses — confirm with decision logs (`"event":"payment.`) and `correlationId`.
 4. Do not treat `duplicate` volume alone as an incident.
 
-Until scrape exists, approximate the same questions via logs + ledger SQL (see §13–§16).
-
 ### How to interpret alerts
 
 ```text
-Dashboard panel anomaly
+Dashboard panel anomaly / Prometheus rule fire
         │
         ▼
-Alert (payment-alerts.md catalog)
+Alertmanager (local) → receiver ops-local (dummy log)
         │
         ▼
 This runbook (section linked by the alert)
@@ -311,15 +313,19 @@ This runbook (section linked by the alert)
 Troubleshooting (§11–§16)
 ```
 
-| Alert id | Start here |
-|---|---|
-| `payment_signature_rejected_spike` | §11 |
-| `payment_ledger_received_stuck` | §13 · §14 |
-| `payment_retryable_elevated` | §12 · §14 |
-| `payment_webhook_latency_high` | §12 |
-| `payment_processing_error_spike` | §12 |
+Ops silence / smoke (sem paging): [alertmanager-ops.md](../platform/alertmanager-ops.md).
 
-Conditions in the alert contract are **intended** evaluation expressions — they do not fire automatically today.
+| Alert id | Severity | Receiver | Start here |
+|---|---|---|---|
+| `payment_signature_rejected_spike` | critical | `ops-local` | §11 |
+| `payment_ledger_received_stuck` | warning | `ops-local` | §13 · §14 |
+| `payment_retryable_elevated` | warning | `ops-local` | §12 · §14 |
+| `payment_webhook_latency_high` | warning | `ops-local` | §12 |
+| `payment_processing_error_spike` | critical | `ops-local` | §12 |
+
+`duplicate` **não** tem alerta próprio e **não** é incidente por volume sozinho.
+
+Live evaluation: local Prometheus `rule_files` (FASE 4.1-D3). Thresholds = starting points do contrato — ver [alert-rules-local.md](../platform/alert-rules-local.md).
 
 ---
 
