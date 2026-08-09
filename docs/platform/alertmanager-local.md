@@ -148,4 +148,5 @@ Após `group_wait` (~30s), `docker compose ... logs alert-webhook` deve mostrar 
 
 ## 8. Próximo
 
-**4.1-D3** — Alert Rules (materializar o catálogo D3-A em Prometheus `rule_files`).
+**4.1-D4** — Receivers + Runbooks polish.  
+Alert rules: [alert-rules-local.md](./alert-rules-local.md).

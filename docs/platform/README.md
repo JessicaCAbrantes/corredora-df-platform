@@ -11,6 +11,8 @@ A aplicação (FASE 3) permanece congelada — esta pasta **consome** contratos,
 | [dashboard-as-code.md](./dashboard-as-code.md) | Fluxo edit → export → commit (FASE 4.1-C3) |
 | [alertmanager-audit.md](./alertmanager-audit.md) | Auditoria Alertmanager — decisões congeladas (FASE 4.1-D1) |
 | [alertmanager-local.md](./alertmanager-local.md) | Alertmanager local + wire Prometheus (FASE 4.1-D2) |
+| [alert-rules-audit.md](./alert-rules-audit.md) | Auditoria Alert Rules (FASE 4.1-D3) |
+| [alert-rules-local.md](./alert-rules-local.md) | Prometheus rule_files — 5 alertas D3-A (FASE 4.1-D3) |
 
 Contratos da aplicação (somente leitura):
 

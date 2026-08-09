@@ -1,0 +1,88 @@
+# FASE 4.1-D3 — Payment alert rules (Dashboard/Alert Contract D3-A only).
+#
+# Threshold semantics (operational policy — not “percent”):
+# - 0.1/s  ≈ 6 signature rejects per minute
+# - 0.05/s ≈ 3 PAYMENT_NOT_FOUND retryables per minute
+# - 900s   = 15 minutes oldest RECEIVED
+# - 2s     = p95 webhook processing (outcome=applied)
+# - `for`  = sustained duration (not scrape window alone)
+#
+# Gauge DB-backed: max() only — never sum(payment_ledger_received_*).
+# Alertmanager / receivers / dashboards / apps: untouched.
+
+groups:
+  - name: payments_ops_v1
+    rules:
+      - alert: payment_signature_rejected_spike
+        expr: sum by (provider) (rate(payment_signature_rejected_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Signature rejects elevated for {{ $labels.provider }}"
+          description: "rate(payment_signature_rejected_total) > 0.1/s (~6/min) for 5m."
+          dashboard: "payments-ops-v1 / webhook_outcomes"
+          runbook: "docs/ops/payments-runbook.md#11-troubleshooting--webhook-401"
+
+      - alert: payment_ledger_received_stuck
+        expr: |
+          max by (provider) (payment_ledger_received_total) > 0
+          and
+          max by (provider) (payment_ledger_received_age_seconds) > 900
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ledger RECEIVED stuck for {{ $labels.provider }}"
+          description: "Backlog > 0 and oldest RECEIVED age > 900s (15m). Uses max() only."
+          dashboard: "payments-ops-v1 / ledger_health"
+          runbook: "docs/ops/payments-runbook.md#13-troubleshooting--persistent-received"
+
+      - alert: payment_retryable_elevated
+        expr: |
+          sum by (provider) (
+            rate(payment_retryable_total{code="PAYMENT_NOT_FOUND"}[10m])
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PAYMENT_NOT_FOUND retryables elevated for {{ $labels.provider }}"
+          description: "rate > 0.05/s (~3/min) for 10m."
+          dashboard: "payments-ops-v1 / webhook_outcomes"
+          runbook: "docs/ops/payments-runbook.md#14-payment_not_found"
+
+      - alert: payment_webhook_latency_high
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (provider, le) (
+              rate(payment_webhook_processing_duration_seconds_bucket{outcome="applied"}[5m])
+            )
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Webhook p95 latency high for {{ $labels.provider }}"
+          description: "p95(outcome=applied) > 2s for 5m."
+          dashboard: "payments-ops-v1 / webhook_latency"
+          runbook: "docs/ops/payments-runbook.md#12-troubleshooting--webhook-500"
+
+      - alert: payment_processing_error_spike
+        # One alert combining both Metrics Contract counters (exact names).
+        # Equivalent to summing per-provider rates of processing_error + verify_error.
+        # (Bare `rate(a)+rate(b)` fails on differing __name__; regex selector is the
+        # PromQL-safe form of the approved single-expression semantics.)
+        expr: |
+          sum by (provider) (
+            rate({__name__=~"payment_webhook_processing_error_total|payment_webhook_verify_error_total"}[5m])
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Webhook verify/processing errors for {{ $labels.provider }}"
+          description: "Unexpected processing_error and/or verify_error rate > 0 for 5m."
+          dashboard: "payments-ops-v1 / webhook_outcomes"
+          runbook: "docs/ops/payments-runbook.md#12-troubleshooting--webhook-500"
