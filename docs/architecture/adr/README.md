@@ -21,7 +21,8 @@ docs/architecture/adr/
 ├── ADR-007-api-rest.md
 ├── ADR-008-mobile-first.md
 ├── ADR-009-acessibilidade.md
-└── ADR-010-cicd-github-actions.md
+├── ADR-010-cicd-github-actions.md
+└── ADR-011-deployment-topology.md
 ```
 
 > Atalho histórico: [`docs/adr/`](../../adr/) redireciona para esta pasta.
@@ -41,6 +42,7 @@ docs/architecture/adr/
 | [008](./ADR-008-mobile-first.md) | Mobile First | Aceito |
 | [009](./ADR-009-acessibilidade.md) | Acessibilidade | Aceito |
 | [010](./ADR-010-cicd-github-actions.md) | CI/CD GitHub Actions | Aceito |
+| [011](./ADR-011-deployment-topology.md) | Deployment Topology (staging) | Aceito |
 
 ## Template
 
