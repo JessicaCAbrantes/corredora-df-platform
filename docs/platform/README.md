@@ -6,6 +6,9 @@ A aplicação (FASE 3) permanece congelada — esta pasta **consome** contratos,
 
 | Document | Description |
 |---|---|
+| [deployment-environment-audit.md](./deployment-environment-audit.md) | Auditoria deploy/ambientes (FASE 4.2-A) |
+| [deployment-infrastructure-audit.md](./deployment-infrastructure-audit.md) | Auditoria infra de deployment (FASE 4.2-C) |
+| [ADR-011](../architecture/adr/ADR-011-deployment-topology.md) | Topologia VPS + Compose — **Aceito** (4.2-C0) |
 | [observability-local.md](./observability-local.md) | Prometheus local via Compose (FASE 4.1-B) |
 | [grafana-local.md](./grafana-local.md) | Grafana local + provisioning + dashboard (FASE 4.1-C1 / C2) |
 | [dashboard-as-code.md](./dashboard-as-code.md) | Fluxo edit → export → commit (FASE 4.1-C3) |
