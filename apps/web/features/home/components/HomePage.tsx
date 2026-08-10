@@ -40,7 +40,14 @@ export async function HomePage() {
   return (
     <Layout className="butterfly-home">
       <SiteNavbar activeItemId="home" />
-      <Hero />
+      <Hero
+        secondaryCta={{
+          id: "hero-login",
+          label: "Entrar",
+          href: "/auth/login",
+          variant: "outline",
+        }}
+      />
       <main id="main-content" className="butterfly-home__main">
         <FeaturedEvents result={featuredEventsResult} />
         <Coupons result={couponsResult} />

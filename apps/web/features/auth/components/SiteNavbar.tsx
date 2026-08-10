@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { FACULDADE_MVP_NAV_ITEMS } from "@/constants/faculdade-mvp-nav";
 import { Button } from "../../../../../packages/ui/src/components/Button";
 import { Navbar } from "../../../../../packages/ui/src/components/Navbar";
 import { getSession, type Session } from "../services/http-get-session";
@@ -71,6 +72,7 @@ export function SiteNavbar({ activeItemId, className }: SiteNavbarProps) {
 
   return (
     <Navbar
+      items={FACULDADE_MVP_NAV_ITEMS}
       activeItemId={activeItemId}
       className={className}
       actions={actions}
