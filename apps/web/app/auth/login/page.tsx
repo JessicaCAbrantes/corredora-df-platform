@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { LoginPage } from "@/features/auth";
 
 export const metadata: Metadata = {
-  title: "Entrar",
-  description: "Acesse sua conta na Corredora DF.",
+  title: "Entrar · Corredora DF",
+  description: "Sua corrida começa aqui — acesse sua conta na Corredora DF.",
 };
 
 type AuthLoginRouteProps = {

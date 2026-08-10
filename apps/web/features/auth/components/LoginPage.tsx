@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "../../../../../packages/ui/src/components/Button";
@@ -27,7 +28,7 @@ function messageForError(error: LoginError): string {
 }
 
 /**
- * Minimal login form — posts to Auth MVP; cookie stays HttpOnly in the browser.
+ * Login polish (Faculty MVP F2) — same Auth MVP cookie flow; visual/UX only.
  */
 export function LoginPage({ returnUrl }: LoginPageProps) {
   const router = useRouter();
@@ -61,11 +62,16 @@ export function LoginPage({ returnUrl }: LoginPageProps) {
   return (
     <main className="auth-login">
       <div className="auth-login__panel">
-        <p className="auth-login__brand">Corredora DF</p>
-        <h1 className="auth-login__title">Entrar</h1>
-        <p className="auth-login__subtitle">
-          Use sua conta para continuar a inscrição.
-        </p>
+        <div className="auth-login__branding">
+          <span className="auth-login__mark" aria-hidden="true">
+            🦋
+          </span>
+          <p className="auth-login__brand">Corredora DF</p>
+          <h1 className="auth-login__title">Sua corrida começa aqui</h1>
+          <p className="auth-login__subtitle">
+            Entre com sua conta para acessar corridas, kits e seu perfil.
+          </p>
+        </div>
 
         <form className="auth-login__form" onSubmit={onSubmit} noValidate>
           <label className="auth-login__field">
@@ -78,6 +84,7 @@ export function LoginPage({ returnUrl }: LoginPageProps) {
               required
               value={email}
               disabled={loading}
+              placeholder="seu@email.com"
               onChange={(e) => setEmail(e.target.value)}
             />
           </label>
@@ -92,6 +99,7 @@ export function LoginPage({ returnUrl }: LoginPageProps) {
               required
               value={password}
               disabled={loading}
+              placeholder="••••••••"
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
@@ -113,6 +121,12 @@ export function LoginPage({ returnUrl }: LoginPageProps) {
             {loading ? "Entrando…" : "Entrar"}
           </Button>
         </form>
+
+        <p className="auth-login__footer">
+          <Link className="auth-login__home-link" href="/">
+            Voltar ao início
+          </Link>
+        </p>
       </div>
     </main>
   );
