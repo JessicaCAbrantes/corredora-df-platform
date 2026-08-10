@@ -12,18 +12,23 @@ describe("resolveSafeReturnUrl", () => {
   });
 
   it("rejects absolute and protocol-relative URLs", () => {
-    expect(resolveSafeReturnUrl("https://example.com")).toBe("/corridas");
-    expect(resolveSafeReturnUrl("//example.com")).toBe("/corridas");
-    expect(resolveSafeReturnUrl("http://evil.test/x")).toBe("/corridas");
+    expect(resolveSafeReturnUrl("https://example.com")).toBe("/");
+    expect(resolveSafeReturnUrl("//example.com")).toBe("/");
+    expect(resolveSafeReturnUrl("http://evil.test/x")).toBe("/");
   });
 
   it("rejects javascript and scheme-like paths", () => {
-    expect(resolveSafeReturnUrl("javascript:alert(1)")).toBe("/corridas");
-    expect(resolveSafeReturnUrl("/javascript:alert(1)")).toBe("/corridas");
+    expect(resolveSafeReturnUrl("javascript:alert(1)")).toBe("/");
+    expect(resolveSafeReturnUrl("/javascript:alert(1)")).toBe("/");
+  });
+
+  it("defaults to Home when raw is missing", () => {
+    expect(resolveSafeReturnUrl(null)).toBe("/");
+    expect(resolveSafeReturnUrl(undefined)).toBe("/");
   });
 
   it("uses custom fallback when provided", () => {
-    expect(resolveSafeReturnUrl(null, "/")).toBe("/");
-    expect(resolveSafeReturnUrl(undefined, "/")).toBe("/");
+    expect(resolveSafeReturnUrl(null, "/corridas")).toBe("/corridas");
+    expect(resolveSafeReturnUrl(undefined, "/perfil")).toBe("/perfil");
   });
 });

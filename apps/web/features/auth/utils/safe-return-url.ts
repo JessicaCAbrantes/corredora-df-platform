@@ -4,7 +4,7 @@
  */
 export function resolveSafeReturnUrl(
   raw: string | null | undefined,
-  fallback = "/corridas",
+  fallback = "/",
 ): string {
   if (typeof raw !== "string") {
     return fallback;

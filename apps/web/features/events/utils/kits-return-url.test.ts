@@ -12,8 +12,8 @@ describe("Kits returnUrl", () => {
   });
 
   it("rejects open redirects", () => {
-    expect(resolveSafeReturnUrl("https://evil.example")).toBe("/corridas");
-    expect(resolveSafeReturnUrl("//evil.example")).toBe("/corridas");
-    expect(resolveSafeReturnUrl("javascript:alert(1)")).toBe("/corridas");
+    expect(resolveSafeReturnUrl("https://evil.example")).toBe("/");
+    expect(resolveSafeReturnUrl("//evil.example")).toBe("/");
+    expect(resolveSafeReturnUrl("javascript:alert(1)")).toBe("/");
   });
 });

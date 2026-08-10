@@ -1472,6 +1472,89 @@ a {
   min-height: 2rem;
 }
 
+/* -- Home authenticated panel (Faculty MVP F3) -- */
+.home-auth-panel {
+  width: 100%;
+  padding: 0 var(--butterfly-space-md) var(--butterfly-space-lg);
+  box-sizing: border-box;
+}
+
+.home-auth-panel__inner {
+  max-width: var(--butterfly-container-lg);
+  margin-inline: auto;
+  padding: var(--butterfly-space-lg) var(--butterfly-space-xl);
+  background: var(--butterfly-surface);
+  border: 1px solid var(--butterfly-border);
+  border-radius: calc(var(--butterfly-radius) + 0.15rem);
+  box-shadow: 0 10px 28px rgb(15 118 110 / 6%);
+}
+
+.home-auth-panel__eyebrow {
+  margin: 0 0 var(--butterfly-space-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--butterfly-accent);
+}
+
+.home-auth-panel__title {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.home-auth-panel__meta {
+  margin: var(--butterfly-space-sm) 0 var(--butterfly-space-md);
+  color: var(--butterfly-muted);
+  font-size: 0.95rem;
+}
+
+.home-auth-panel__cta {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  color: var(--butterfly-accent);
+  text-decoration: none;
+}
+
+.home-auth-panel__cta:hover {
+  text-decoration: underline;
+}
+
+.home-auth-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--butterfly-space-sm);
+  justify-content: center;
+  max-width: var(--butterfly-container-lg);
+  margin: 0 auto var(--butterfly-space-xl);
+  padding: 0 var(--butterfly-space-md);
+  box-sizing: border-box;
+}
+
+.home-auth-shortcuts__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--butterfly-border);
+  border-radius: var(--butterfly-radius);
+  background: var(--butterfly-surface);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--foreground);
+}
+
+.home-auth-shortcuts__item:hover {
+  border-color: var(--butterfly-accent);
+  color: var(--butterfly-accent);
+  background: var(--butterfly-accent-soft);
+}
+
 .auth-logout {
   display: flex;
   flex-direction: column;

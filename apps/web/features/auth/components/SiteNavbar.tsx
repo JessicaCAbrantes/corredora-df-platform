@@ -40,6 +40,15 @@ export function SiteNavbar({ activeItemId, className }: SiteNavbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => {
+            router.push("/kits");
+          }}
+        >
+          Meus kits
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
             router.push("/perfil");
           }}
         >
