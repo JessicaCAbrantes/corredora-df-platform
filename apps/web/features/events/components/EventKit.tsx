@@ -32,7 +32,7 @@ export function EventKit({
       ) : null}
       <p className="event-kit__description">{description}</p>
       {!available ? (
-        <p className="event-kit__status">Kit ainda não disponível</p>
+        <p className="event-kit__status">Disponível após a inscrição</p>
       ) : null}
     </div>
   );

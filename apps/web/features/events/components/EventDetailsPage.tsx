@@ -86,7 +86,11 @@ function EventDetailsSuccess({ event }: { event: EventDetailsData }) {
                 <h3 className="event-details__block-title">Kit</h3>
                 <EventKit
                   available={event.kit.available}
-                  description={event.kit.description}
+                  description={
+                    event.kit.available
+                      ? event.kit.description
+                      : "Após se inscrever, acompanhe o kit desta prova em Meus kits."
+                  }
                   imageSrc={event.kit.imageSrc}
                   imageAlt={event.kit.imageAlt}
                 />

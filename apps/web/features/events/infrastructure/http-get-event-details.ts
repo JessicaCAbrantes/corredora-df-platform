@@ -3,6 +3,7 @@ import type {
   EventDetailsFetchResult,
   EventRegistrationStatus,
 } from "../types/event-details";
+import { sanitizeCoverImageSrc } from "../utils/sanitize-cover-image";
 import { env } from "@/lib/env";
 
 /**
@@ -218,6 +219,7 @@ function isValidEventDetailsDto(data: unknown): data is HttpEventDetailsDto {
 
 function toEventDetailsData(dto: HttpEventDetailsDto): EventDetailsData {
   const { dateLabel, timeLabel } = formatDateAndTime(dto.date);
+  const coverSrc = sanitizeCoverImageSrc(dto.coverImage);
 
   return {
     id: dto.id,
@@ -228,7 +230,7 @@ function toEventDetailsData(dto: HttpEventDetailsDto): EventDetailsData {
     distanceLabel: dto.distance,
     locationLabel: dto.city,
     imageAlt: dto.name,
-    ...(dto.coverImage ? { imageSrc: dto.coverImage } : {}),
+    ...(coverSrc ? { imageSrc: coverSrc } : {}),
     registrationStatus: dto.registrationStatus,
     pricing: {
       currentPriceLabel: formatCurrentPrice(dto.price),

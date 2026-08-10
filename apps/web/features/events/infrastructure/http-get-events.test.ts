@@ -165,7 +165,6 @@ describe("createHttpGetEvents — success mapping", () => {
           price: CURRENCY_BRL.format(149),
           status: "open",
           image: {
-            src: "https://example.com/meia.jpg",
             alt: "Meia Maratona de Brasília",
           },
         },
@@ -323,7 +322,7 @@ describe("createHttpGetEvents — dates (UTC)", () => {
 });
 
 describe("createHttpGetEvents — image", () => {
-  it("maps coverImage to image.src with name as alt", async () => {
+  it("omits example.com placeholder covers (Faculty MVP F4)", async () => {
     const { getEvents } = createAdapter(
       jsonResponse({ data: [PAID_DTO], meta: META }),
     );
@@ -332,7 +331,23 @@ describe("createHttpGetEvents — image", () => {
       throw new Error("expected success");
     }
     expect(result.events[0]!.image).toEqual({
-      src: "https://example.com/meia.jpg",
+      alt: "Meia Maratona de Brasília",
+    });
+  });
+
+  it("maps non-placeholder coverImage to image.src with name as alt", async () => {
+    const { getEvents } = createAdapter(
+      jsonResponse({
+        data: [{ ...PAID_DTO, coverImage: "/events/meia.svg" }],
+        meta: META,
+      }),
+    );
+    const result = await getEvents(BASE_PARAMS);
+    if (result.status !== "success") {
+      throw new Error("expected success");
+    }
+    expect(result.events[0]!.image).toEqual({
+      src: "/events/meia.svg",
       alt: "Meia Maratona de Brasília",
     });
   });

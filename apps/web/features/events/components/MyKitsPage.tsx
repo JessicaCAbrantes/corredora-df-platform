@@ -75,7 +75,7 @@ export function MyKitsPage() {
 
         {state.status === "error" ? (
           <div className="my-kits-page__panel" role="alert">
-            <h1 className="my-kits-page__title">Retirada de Kits</h1>
+            <h1 className="my-kits-page__title">Meus kits</h1>
             <p className="my-kits-page__error">
               Não foi possível carregar seus kits.
             </p>
@@ -85,12 +85,12 @@ export function MyKitsPage() {
 
         {state.status === "ready" && state.items.length === 0 ? (
           <div className="my-kits-page__panel">
-            <h1 className="my-kits-page__title">Retirada de Kits</h1>
+            <h1 className="my-kits-page__title">Meus kits</h1>
             <p className="my-kits-page__empty-lead">
-              Você ainda não possui kits disponíveis para retirada.
+              Você ainda não possui kits disponíveis.
             </p>
             <p className="my-kits-page__empty-copy">
-              Participe de uma corrida para acompanhar as informações do seu kit.
+              Inscreva-se em uma corrida para acompanhar o kit por aqui.
             </p>
             <Link href="/corridas" className="my-kits-page__cta">
               Ver corridas
@@ -100,9 +100,9 @@ export function MyKitsPage() {
 
         {state.status === "ready" && state.items.length > 0 ? (
           <div className="my-kits-page__panel">
-            <h1 className="my-kits-page__title">Retirada de Kits</h1>
+            <h1 className="my-kits-page__title">Meus kits</h1>
             <p className="my-kits-page__subtitle">
-              Informações somente leitura dos kits das suas inscrições.
+              Kits das corridas em que você está inscrita — status somente leitura.
             </p>
 
             <ul className="my-kits-page__list">
@@ -131,7 +131,11 @@ export function MyKitsPage() {
                       </div>
                       <div className="my-kits-page__field">
                         <dt>Status</dt>
-                        <dd>Disponível</dd>
+                        <dd>
+                          <span className="my-kits-page__status-pill">
+                            Disponível para acompanhamento
+                          </span>
+                        </dd>
                       </div>
                     </dl>
                     <Link

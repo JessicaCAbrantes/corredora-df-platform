@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Container } from "../../../../../packages/ui/src/components/Container";
 import { Section } from "../../../../../packages/ui/src/components/Section";
@@ -88,6 +89,24 @@ export function EventRegistrationSection({
               >
                 {state.message}
               </p>
+            ) : null}
+            {isTerminalRegistered ? (
+              <div className="event-details__registration-next">
+                <p className="event-details__registration-next-lead">
+                  Próximos passos do seu percurso:
+                </p>
+                <div className="event-details__registration-next-links">
+                  <Link href="/kits" className="event-details__registration-next-link">
+                    Ver meus kits
+                  </Link>
+                  <Link
+                    href="/minhas-inscricoes"
+                    className="event-details__registration-next-link"
+                  >
+                    Minhas inscrições
+                  </Link>
+                </div>
+              </div>
             ) : null}
           </div>
         </div>

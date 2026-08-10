@@ -216,7 +216,7 @@ describe("createHttpGetEventDetails — success mapping", () => {
     expect(result.event.distanceLabel).toBe("21K");
   });
 
-  it("maps coverImage → imageSrc and name → imageAlt", async () => {
+  it("omits example.com placeholder coverImage (Faculty MVP F4)", async () => {
     const { getEventDetails } = createAdapter(
       jsonResponse({ data: PAID_DTO }),
     );
@@ -225,7 +225,22 @@ describe("createHttpGetEventDetails — success mapping", () => {
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
-    expect(result.event.imageSrc).toBe("https://example.com/meia.jpg");
+    expect(result.event.imageSrc).toBeUndefined();
+    expect(result.event.imageAlt).toBe("Meia Maratona de Brasília");
+  });
+
+  it("maps non-placeholder coverImage → imageSrc and name → imageAlt", async () => {
+    const { getEventDetails } = createAdapter(
+      jsonResponse({
+        data: { ...PAID_DTO, coverImage: "/events/meia.svg" },
+      }),
+    );
+
+    const result = await getEventDetails("meia-maratona-brasilia");
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.event.imageSrc).toBe("/events/meia.svg");
     expect(result.event.imageAlt).toBe("Meia Maratona de Brasília");
   });
 

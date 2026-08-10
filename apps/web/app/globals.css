@@ -936,6 +936,41 @@ a {
   color: #b91c1c;
 }
 
+.event-details__registration-next {
+  display: flex;
+  flex-direction: column;
+  gap: var(--butterfly-space-sm);
+  margin-top: var(--butterfly-space-sm);
+  padding: var(--butterfly-space-md);
+  border: 1px solid var(--butterfly-border);
+  border-radius: var(--butterfly-radius);
+  background: var(--butterfly-accent-soft);
+}
+
+.event-details__registration-next-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.event-details__registration-next-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--butterfly-space-sm);
+}
+
+.event-details__registration-next-link {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--butterfly-accent);
+  text-decoration: none;
+}
+
+.event-details__registration-next-link:hover {
+  text-decoration: underline;
+}
+
 .event-details__confirm,
 .event-details__support {
   display: grid;
@@ -1913,6 +1948,17 @@ a {
 .my-kits-page__field dd {
   margin: 0;
   font-size: 1rem;
+}
+
+.my-kits-page__status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--butterfly-accent-soft);
+  color: var(--butterfly-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .my-kits-page__event-link {

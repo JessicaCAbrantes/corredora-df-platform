@@ -5,6 +5,7 @@ import type {
   GetEventsListParams,
   GetEventsListResult,
 } from "../types/events-list";
+import { sanitizeCoverImageSrc } from "../utils/sanitize-cover-image";
 import { env } from "@/lib/env";
 
 /**
@@ -138,6 +139,7 @@ function formatDates(iso: string): { date: string; dateTime: string } {
 function toEventListItem(dto: HttpEventDto): EventListItem {
   const { date, dateTime } = formatDates(dto.date);
   const price = formatPrice(dto.price);
+  const coverSrc = sanitizeCoverImageSrc(dto.coverImage);
 
   return {
     slug: dto.slug,
@@ -149,7 +151,7 @@ function toEventListItem(dto: HttpEventDto): EventListItem {
     ...(price !== undefined ? { price } : {}),
     status: mapEventStatus(dto.status, dto.registrationStatus),
     image: {
-      ...(dto.coverImage ? { src: dto.coverImage } : {}),
+      ...(coverSrc ? { src: coverSrc } : {}),
       alt: dto.name,
     },
   };
