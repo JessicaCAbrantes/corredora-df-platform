@@ -23,3 +23,6 @@ Fluxo escolhido após micro-auditoria: **mais estável** que Kit Pickup completo
 - Se já inscrita: CTA mostra “Você já está inscrito” + mesmos atalhos; cancelar em Minhas inscrições para repetir.
 - Kit Pickup (termo/pagamento/ops) fica **fora** deste F4 — stretch opcional depois da apresentação.
 - Capas `example.com` do seed são omitidas na Web (placeholder Butterfly).
+- `/playground` redireciona para a Home (fora da demo).
+- Teasers de Cupons/Parceiros/Blog são **não clicáveis** (badge “Em breve”).
+- Rodapé da demo só liga rotas reais (Home / Corridas / Meus kits).

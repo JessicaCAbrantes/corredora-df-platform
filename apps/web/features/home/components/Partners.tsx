@@ -10,7 +10,7 @@ export type PartnersProps = {
 };
 
 /**
- * Partners teaser — display only (no /parceiros routes yet; F1 hides dead links).
+ * Partners teaser — explicitly non-clickable (Faculty MVP F5).
  */
 export function Partners({ result }: PartnersProps) {
   const presentation = toHomePartnersPresentation(result);
@@ -19,6 +19,11 @@ export function Partners({ result }: PartnersProps) {
     <Section
       title="Parceiros"
       description="Marcas do ecossistema de corrida no DF."
+      headerActions={
+        <span className="home-teaser-badge" aria-hidden="true">
+          Em breve
+        </span>
+      }
     >
       <Container>
         {presentation.status === "ready" ? (
@@ -28,7 +33,7 @@ export function Partners({ result }: PartnersProps) {
                 key={partner.id}
                 name={partner.name}
                 category={partner.category}
-                href="#"
+                className="home-teaser-card"
               />
             ))}
           </Grid>
@@ -42,7 +47,10 @@ export function Partners({ result }: PartnersProps) {
 
         {presentation.status === "error" ? (
           <div className="home-partners__state" role="alert">
-            <p className="home-partners__error">{presentation.message}</p>
+            <p className="home-partners__error">
+              Não foi possível carregar os parceiros agora. Você ainda pode
+              explorar corridas e sua conta.
+            </p>
           </div>
         ) : null}
       </Container>

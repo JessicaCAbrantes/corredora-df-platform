@@ -1,5 +1,5 @@
-import { Footer } from "../../../../../packages/ui/src/components/Footer";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
 import { getBlogPostsList } from "../../blog/services/get-blog-posts-list";
 import { getCouponsList } from "../../coupons/services/get-coupons-list";
@@ -62,7 +62,7 @@ export async function HomePage() {
         <Kits result={kitPickupResult} />
         <Blog result={blogResult} />
       </main>
-      <Footer />
+      <SiteFooter />
     </Layout>
   );
 }

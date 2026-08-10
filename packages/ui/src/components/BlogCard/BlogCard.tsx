@@ -1,3 +1,7 @@
+/**
+ * Butterfly BlogCard — editorial teaser.
+ * When `href` is omitted, the title is plain text (non-clickable teaser).
+ */
 import {
   BLOG_CARD_BODY_CLASS,
   BLOG_CARD_CATEGORY_CLASS,
@@ -9,15 +13,12 @@ import {
   type BlogCardProps,
 } from "./BlogCard.types";
 
-/**
- * Butterfly BlogCard — placeholder editorial preview.
- */
 export function BlogCard({
   title,
   excerpt,
   category,
   readingTime,
-  href = "#",
+  href,
   className,
 }: BlogCardProps) {
   const classNames = [BLOG_CARD_CLASS, className].filter(Boolean).join(" ");
@@ -30,7 +31,7 @@ export function BlogCard({
           <p className={BLOG_CARD_CATEGORY_CLASS}>{category}</p>
         ) : null}
         <h3 className={BLOG_CARD_TITLE_CLASS}>
-          <a href={href}>{title}</a>
+          {href ? <a href={href}>{title}</a> : <span>{title}</span>}
         </h3>
         <p className={BLOG_CARD_EXCERPT_CLASS}>{excerpt}</p>
         {readingTime ? (

@@ -10,7 +10,7 @@ export type BlogProps = {
 };
 
 /**
- * Blog teaser — display only (no /blog routes yet; F1 hides dead links).
+ * Blog teaser — explicitly non-clickable (Faculty MVP F5).
  */
 export function Blog({ result }: BlogProps) {
   const presentation = toHomeBlogPresentation(result);
@@ -19,6 +19,11 @@ export function Blog({ result }: BlogProps) {
     <Section
       title="Blog"
       description="Conteúdo editorial do ecossistema de corrida no DF."
+      headerActions={
+        <span className="home-teaser-badge" aria-hidden="true">
+          Em breve
+        </span>
+      }
     >
       <Container>
         {presentation.status === "ready" ? (
@@ -30,7 +35,7 @@ export function Blog({ result }: BlogProps) {
                 excerpt={post.excerpt}
                 category={post.category}
                 readingTime={post.readingTimeLabel}
-                href="#"
+                className="home-teaser-card"
               />
             ))}
           </Grid>
@@ -44,7 +49,10 @@ export function Blog({ result }: BlogProps) {
 
         {presentation.status === "error" ? (
           <div className="home-blog__state" role="alert">
-            <p className="home-blog__error">{presentation.message}</p>
+            <p className="home-blog__error">
+              Não foi possível carregar o blog agora. Continue pela Home e pelas
+              corridas.
+            </p>
           </div>
         ) : null}
       </Container>

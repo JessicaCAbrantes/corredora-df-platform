@@ -10,7 +10,7 @@ export type CouponsProps = {
 };
 
 /**
- * Coupons teaser — display only (no /cupons list page yet; F1 hides dead links).
+ * Coupons teaser — explicitly non-clickable (Faculty MVP F5).
  */
 export function Coupons({ result }: CouponsProps) {
   const presentation = toHomeCouponsPresentation(result);
@@ -19,6 +19,11 @@ export function Coupons({ result }: CouponsProps) {
     <Section
       title="Cupons"
       description="Benefícios do ecossistema de corrida no DF."
+      headerActions={
+        <span className="home-teaser-badge" aria-hidden="true">
+          Em breve
+        </span>
+      }
     >
       <Container>
         {presentation.status === "ready" ? (
@@ -30,7 +35,7 @@ export function Coupons({ result }: CouponsProps) {
                 discountLabel={coupon.discountLabel}
                 partnerName={coupon.partnerName}
                 expiresAt={coupon.expiresAtLabel}
-                href="#"
+                className="home-teaser-card"
               />
             ))}
           </Grid>
@@ -44,7 +49,10 @@ export function Coupons({ result }: CouponsProps) {
 
         {presentation.status === "error" ? (
           <div className="home-coupons__state" role="alert">
-            <p className="home-coupons__error">{presentation.message}</p>
+            <p className="home-coupons__error">
+              Não foi possível carregar os cupons agora. As demais áreas da
+              plataforma continuam disponíveis.
+            </p>
           </div>
         ) : null}
       </Container>

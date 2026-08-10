@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Footer } from "../../../../../packages/ui/src/components/Footer";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
 import { buildLoginUrl } from "../auth/build-login-url";
@@ -151,7 +151,7 @@ export function MyKitsPage() {
           </div>
         ) : null}
       </main>
-      <Footer />
+      <SiteFooter />
     </Layout>
   );
 }

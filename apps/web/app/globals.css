@@ -1584,10 +1584,27 @@ a {
   color: var(--foreground);
 }
 
-.home-auth-shortcuts__item:hover {
-  border-color: var(--butterfly-accent);
-  color: var(--butterfly-accent);
+.home-teaser-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
   background: var(--butterfly-accent-soft);
+  color: var(--butterfly-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-teaser-card {
+  cursor: default;
+}
+
+.home-teaser-card a {
+  pointer-events: none;
+  text-decoration: none;
+  cursor: default;
 }
 
 .auth-logout {

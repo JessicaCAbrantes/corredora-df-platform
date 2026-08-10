@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Footer } from "../../../../../packages/ui/src/components/Footer";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
 import { buildLoginUrl } from "../../events/auth/build-login-url";
@@ -96,7 +96,7 @@ export function ProfilePage() {
           </div>
         ) : null}
       </main>
-      <Footer />
+      <SiteFooter />
     </Layout>
   );
 }

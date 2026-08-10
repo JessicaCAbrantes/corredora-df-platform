@@ -66,12 +66,15 @@ export function FeaturedEvents({ result }: FeaturedEventsProps) {
 
         {presentation.status === "error" ? (
           <div className="home-featured-events__state" role="alert">
-            <p className="home-featured-events__error">{presentation.message}</p>
+            <p className="home-featured-events__error">
+              Não foi possível carregar as corridas em destaque. Tente abrir a
+              listagem completa.
+            </p>
             <Link
               className="butterfly-section__cta"
               href={presentation.listHref}
             >
-              Ver todas
+              Ver todas as corridas
             </Link>
           </div>
         ) : null}

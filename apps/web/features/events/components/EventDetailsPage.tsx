@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Container } from "../../../../../packages/ui/src/components/Container";
-import { Footer } from "../../../../../packages/ui/src/components/Footer";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
 import { Section } from "../../../../../packages/ui/src/components/Section";
@@ -186,7 +186,7 @@ export function EventDetailsPage({ result }: EventDetailsPageProps) {
         <EventDetailsError message={result.message} />
       ) : null}
 
-      <Footer />
+      <SiteFooter />
     </Layout>
   );
 }

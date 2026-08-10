@@ -1,3 +1,7 @@
+/**
+ * Butterfly PartnerCard — partner teaser tile.
+ * When `href` is omitted, name/logo are plain text (non-clickable teaser).
+ */
 import {
   PARTNER_CARD_CATEGORY_CLASS,
   PARTNER_CARD_CLASS,
@@ -6,24 +10,30 @@ import {
   type PartnerCardProps,
 } from "./PartnerCard.types";
 
-/**
- * Butterfly PartnerCard — placeholder partner logo tile.
- */
 export function PartnerCard({
   name,
   category,
-  href = "#",
+  href,
   className,
 }: PartnerCardProps) {
   const classNames = [PARTNER_CARD_CLASS, className].filter(Boolean).join(" ");
+  const mark = (
+    <span className={PARTNER_CARD_LOGO_CLASS} aria-hidden="true">
+      {name.charAt(0)}
+    </span>
+  );
 
   return (
     <article className={classNames}>
-      <a href={href} className={PARTNER_CARD_LOGO_CLASS} aria-label={name}>
-        <span aria-hidden="true">{name.charAt(0)}</span>
-      </a>
+      {href ? (
+        <a href={href} className={PARTNER_CARD_LOGO_CLASS} aria-label={name}>
+          <span aria-hidden="true">{name.charAt(0)}</span>
+        </a>
+      ) : (
+        mark
+      )}
       <h3 className={PARTNER_CARD_NAME_CLASS}>
-        <a href={href}>{name}</a>
+        {href ? <a href={href}>{name}</a> : <span>{name}</span>}
       </h3>
       {category ? (
         <p className={PARTNER_CARD_CATEGORY_CLASS}>{category}</p>

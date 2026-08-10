@@ -1,6 +1,6 @@
 import { EventDetailsLoading } from "@/features/events";
 import { SiteNavbar } from "@/features/auth/components/SiteNavbar";
-import { Footer } from "../../../../../packages/ui/src/components/Footer";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 
 export default function CorridaDetailsLoading() {
@@ -8,7 +8,7 @@ export default function CorridaDetailsLoading() {
     <Layout className="event-details">
       <SiteNavbar activeItemId="corridas" />
       <EventDetailsLoading />
-      <Footer />
+      <SiteFooter />
     </Layout>
   );
 }

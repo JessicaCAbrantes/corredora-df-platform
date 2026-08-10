@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Container } from "../../../../../packages/ui/src/components/Container";
 import { EventCard } from "../../../../../packages/ui/src/components/EventCard";
-import { Footer } from "../../../../../packages/ui/src/components/Footer";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Grid } from "../../../../../packages/ui/src/components/Grid";
 import { Layout } from "../../../../../packages/ui/src/components/Layout";
 import { SiteNavbar } from "../../auth/components/SiteNavbar";
@@ -187,9 +187,16 @@ function EventsListingError({ message }: { message: string }) {
     <main id="main-content" className="events-listing__state">
       <Container>
         <h1 className="events-listing__state-title">Algo deu errado</h1>
-        <p className="events-listing__state-text">{message}</p>
+        <p className="events-listing__state-text">
+          Não foi possível carregar as corridas agora.
+          {message ? ` (${message})` : ""} Tente novamente em instantes ou
+          volte para a Home.
+        </p>
         <Link className="events-listing__state-link" href="/">
           Voltar para a Home
+        </Link>
+        <Link className="events-listing__state-link" href="/corridas">
+          Tentar novamente
         </Link>
       </Container>
     </main>
@@ -224,7 +231,7 @@ export function EventsListingPage({
         />
       ) : null}
 
-      <Footer />
+      <SiteFooter />
     </Layout>
   );
 }
