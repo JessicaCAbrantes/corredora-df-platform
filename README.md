@@ -21,12 +21,17 @@ Plataforma digital para corredores do Distrito Federal
 
 | Item | Informação |
 |---|---|
-| Curso | Ciência da Computação |
-| Componente curricular | Atividade Extensionista II |
-| Modalidade | Projeto de contexto à comunidade |
-| Submodalidade | Projeto |
-| ODS | ODS 8 — Trabalho Decente e Crescimento Econômico |
-| Área | Tecnologia e desenvolvimento de soluções digitais |
+| **Alunos(as)** | Jéssica Costa de Abrantes e Alan Rodrigues Soares |
+| **Curso** | Ciência da Computação |
+| **Componente Curricular** | Atividade Extensionista II |
+| **Título do projeto** | Corredora DF |
+| **Modalidade** | Projeto de contexto à comunidade |
+| **Submodalidade** | Projeto |
+| **ODS** | ODS 8 — Trabalho Decente e Crescimento Econômico |
+| **Área do conhecimento** | Tecnologia e desenvolvimento de soluções digitais |
+| **Público-alvo** | Corredores do Distrito Federal e comunidade relacionada à corrida de rua |
+| **Local/contexto** | Distrito Federal |
+| **Situação** | Projeto acadêmico em desenvolvimento |
 
 ---
 
@@ -148,43 +153,80 @@ em uma experiência digital direcionada ao público do Distrito Federal.
 
 ## 🔐 Funcionalidades implementadas
 
-O MVP acadêmico atualmente contempla:
-
 - Home pública;
-- autenticação de usuários;
-- sessão utilizando cookie HttpOnly;
+- Identidade visual inicial;
+- Login;
+- Sessão autenticada;
 - Home autenticada;
-- listagem de corridas;
-- detalhes de corrida;
-- inscrição em corrida;
-- acompanhamento de kits;
-- perfil do usuário;
-- logout;
-- persistência de dados;
-- integração frontend/backend.
+- Listagem de corridas;
+- Detalhes de corrida;
+- Inscrição em corrida;
+- Meus kits;
+- Perfil;
+- Logout;
+- Persistência em PostgreSQL;
+- Integração entre frontend e backend;
+- Jornada principal de usuário validada.
 
-### Jornada principal
+---
 
+### 🚧 Planejado para etapas futuras
 
+- Cadastro público;
+- Página completa de parceiros;
+- Sistema de cupons;
+- Comunidade;
+- Blog;
+- Treinos;
+- Assessoria esportiva;
+- Melhorias avançadas de acessibilidade;
+- Ambiente de staging;
+- Containerização;
+- Deploy externo;
+- Evolução da infraestrutura;
+- Melhorias de segurança e observabilidade.
+
+---
+
+## 🦋 Jornada principal do MVP
+
+A jornada acadêmica atualmente validada é:
+
+**Descobrir → Autenticar → Inscrever → Acompanhar → Sair**
+
+```text
 Visitante
-   ↓
+   │
+   ▼
 Home
-   ↓
+   │
+   ▼
 Login
-   ↓
+   │
+   ▼
 Home autenticada
-   ↓
+   │
+   ▼
 Corridas
-   ↓
+   │
+   ▼
 Detalhes da corrida
-   ↓
+   │
+   ▼
 Inscrição
-   ↓
+   │
+   ▼
 Meus kits
-   ↓
+   │
+   ▼
 Perfil
-   ↓
+   │
+   ▼
 Logout
+   │
+   ▼
+Home visitante
+```
 
 
 ## Status
