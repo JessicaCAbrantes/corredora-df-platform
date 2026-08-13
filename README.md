@@ -170,7 +170,7 @@ em uma experiência digital direcionada ao público do Distrito Federal.
 
 ---
 
-### 🚧 Planejado para etapas futuras
+## 🚧 Planejado para etapas futuras
 
 - Cadastro público;
 - Página completa de parceiros;
@@ -227,8 +227,54 @@ Logout
    ▼
 Home visitante
 ```
+---
+## ♿ Usabilidade e acessibilidade
 
+A experiência do projeto considera a necessidade de criar uma interface
+simples e compreensível para diferentes perfis de usuários.
 
+Entre os aspectos considerados estão:
+
+- redução de elementos visuais desnecessários;
+- hierarquia visual clara;
+- textos objetivos;
+- navegação simplificada;
+- estados de carregamento e erro;
+- preocupação com contraste;
+- uso de elementos que não dependam exclusivamente de cores;
+- preocupação com usuários com daltonismo/discromatopsia;
+- possibilidade de evolução para navegação por teclado;
+- evolução futura de recursos de acessibilidade.
+
+Esses aspectos fazem parte da evolução planejada do projeto e ainda serão
+aprofundados em etapas futuras.
+---
+
+## 🏗️ Arquitetura
+
+A arquitetura atual do MVP pode ser representada de forma simplificada:
+```
+┌────────────────────┐
+│      Next.js       │
+│       Web          │
+└─────────┬──────────┘
+          │
+          │ HTTP
+          │ Cookie HttpOnly
+          ▼
+┌────────────────────┐
+│      NestJS        │
+│       API          │
+└─────────┬──────────┘
+          │
+          │ Prisma
+          ▼
+┌────────────────────┐
+│    PostgreSQL      │
+└────────────────────┘
+```
+
+---
 ## Status
 
 🚧 Em desenvolvimento
@@ -244,6 +290,7 @@ Home visitante
 5. Rodar apps via Turborepo / filtros `api` e `web`
 6. (Opcional) Observabilidade local: [docs/platform/observability-local.md](./docs/platform/observability-local.md) · [docs/platform/grafana-local.md](./docs/platform/grafana-local.md)
 
+---
 ## Variáveis de ambiente
 
 Documentação completa (API, Web, Docker, CI):
@@ -257,6 +304,79 @@ Templates (sem secrets reais):
 | API | [`apps/api/.env.example`](./apps/api/.env.example) | `apps/api/.env` |
 | Web | [`apps/web/.env.example`](./apps/web/.env.example) | `apps/web/.env.local` |
 
+---
 ## Documentação
 
 Índice: [`docs/README.md`](./docs/README.md)
+
+
+
+## 🔗 Links do projeto
+
+### 💻 Repositório
+
+[GitHub — Corredora DF](https://github.com/JessicaCAbrantes/corredora-df-platform)
+
+Repositório contendo o código-fonte, documentação, histórico de desenvolvimento
+e materiais técnicos do projeto.
+
+### 🌐 Plataforma
+
+**Ambiente de demonstração:** execução local durante a apresentação acadêmica.
+
+> A aplicação atualmente é executada em ambiente local, não estando publicada
+> em ambiente de produção externo.
+
+### 📚 Documentação acadêmica
+
+- [Índice da documentação](./docs/README.md)
+- [Roteiro da demonstração acadêmica](./docs/testing/faculdade-mvp-demo-script.md)
+- [Checkpoint do MVP acadêmico](./docs/testing/faculdade-mvp-f6-checkpoint.md)
+
+### 🧪 Documentação técnica
+
+- [Configuração do ambiente](./docs/setup/environment.md)
+- [Observabilidade local](./docs/platform/observability-local.md)
+- [Grafana local](./docs/platform/grafana-local.md)
+
+### 📝 Atividade Extensionista
+
+A documentação relacionada à Atividade Extensionista II apresenta o
+contexto da atividade, diagnóstico realizado, objetivos, metodologia,
+execução, resultados e referências utilizadas.
+
+- [Documentação da Atividade Extensionista](./docs/academic/atividade-extensionista.md)
+- [Fase 1 — Diagnóstico e público](./docs/academic/fase-1.md)
+- [Fase 2 — Ação extensionista](./docs/academic/fase-2.md)
+- [Fase 3 — Avaliação da ação](./docs/academic/fase-3.md)
+- [Referências](./docs/academic/referencias.md)
+
+> Os documentos acadêmicos complementam as informações apresentadas no
+> formulário da instituição de ensino.
+
+### 🎥 Demonstração
+
+A demonstração acadêmica apresenta a jornada principal do MVP:
+
+**Descobrir → Autenticar → Inscrever → Acompanhar → Sair**
+
+O material audiovisual e/ou fotográfico utilizado como evidência da
+atividade extensionista é apresentado conforme solicitado pela instituição
+de ensino.
+
+---
+
+## ⚠️ Aviso acadêmico
+
+Este repositório faz parte de um projeto acadêmico de graduação.
+
+O sistema está em desenvolvimento e não deve ser interpretado como uma
+plataforma comercial pronta para produção.
+
+Funcionalidades, arquitetura, segurança, infraestrutura e experiência do
+usuário poderão ser modificadas nas próximas etapas do projeto.
+
+O estado apresentado neste repositório corresponde ao MVP acadêmico
+validado para a atividade extensionista.
+
+
