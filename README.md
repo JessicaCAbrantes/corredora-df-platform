@@ -332,6 +332,7 @@ e materiais técnicos do projeto.
 - [Índice da documentação](./docs/README.md)
 - [Roteiro da demonstração acadêmica](./docs/testing/faculdade-mvp-demo-script.md)
 - [Checkpoint do MVP acadêmico](./docs/testing/faculdade-mvp-f6-checkpoint.md)
+- [Configuração do ambiente](./docs/setup/environment.md)
 
 ### 🧪 Documentação técnica
 
@@ -353,6 +354,19 @@ execução, resultados e referências utilizadas.
 
 > Os documentos acadêmicos complementam as informações apresentadas no
 > formulário da instituição de ensino.
+
+Os documentos acadêmicos serão mantidos na pasta:
+
+```
+docs/
+└── academic/
+    ├── atividade-extensionista.md
+    ├── fase-1.md
+    ├── fase-2.md
+    ├── fase-3.md
+    └── referencias.md
+```
+
 
 ### 🎥 Demonstração
 
