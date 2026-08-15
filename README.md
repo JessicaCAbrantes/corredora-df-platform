@@ -14,7 +14,16 @@ Uma plataforma moderna para corredores, eventos, parceiros e comunidade.
 
 ## Status
 
-🚧 Em desenvolvimento
+🚧 **Em desenvolvimento — MVP acadêmico funcional**
+
+O projeto encontra-se em desenvolvimento e, para fins da Atividade
+Extensionista II, possui um MVP funcional com a jornada principal validada
+em ambiente local.
+
+O estado atual não representa uma plataforma comercial pronta para produção.
+
+Funcionalidades adicionais, melhorias de infraestrutura, acessibilidade,
+segurança e publicação externa permanecem planejadas para etapas futuras.
 
 ## Setup rápido (local)
 
@@ -43,3 +52,63 @@ Templates (sem secrets reais):
 ## Documentação
 
 Índice: [`docs/README.md`](./docs/README.md)
+
+---
+
+## 🔗 Links do projeto
+
+### 💻 Repositório
+
+[GitHub — Corredora DF](https://github.com/JessicaCAbrantes/corredora-df-platform)
+
+Repositório contendo o código-fonte, documentação, histórico de
+desenvolvimento e materiais técnicos do projeto.
+
+### 🌐 Plataforma
+
+**Ambiente de demonstração:** execução local durante a apresentação
+acadêmica.
+
+> A aplicação atualmente é executada em ambiente local, não estando
+> publicada em ambiente de produção externo.
+
+### 📚 Documentação acadêmica
+
+- [Índice da documentação](./docs/README.md)
+- [Roteiro da demonstração acadêmica](./docs/testing/faculdade-mvp-demo-script.md)
+- [Checkpoint do MVP acadêmico](./docs/testing/faculdade-mvp-f6-checkpoint.md)
+
+### 🧪 Documentação técnica
+
+- [Configuração do ambiente](./docs/setup/environment.md)
+- [Observabilidade local](./docs/platform/observability-local.md)
+- [Grafana local](./docs/platform/grafana-local.md)
+
+### 📝 Atividade Extensionista
+
+A documentação relacionada à Atividade Extensionista II apresenta o contexto
+da atividade, diagnóstico realizado, objetivos, metodologia, execução,
+resultados e referências utilizadas.
+
+- [Documentação da Atividade Extensionista](./docs/academic/atividade-extensionista.md)
+- [Fase 1 — Diagnóstico e público](./docs/academic/fase-1-diagnostico.md)
+- [Fase 2 — Ação extensionista](./docs/academic/fase-2-acao.md)
+- [Fase 3 — Avaliação da ação](./docs/academic/fase-3-avaliacao.md)
+- [Referências](./docs/academic/referencias.md)
+
+> Os documentos acadêmicos complementam as informações apresentadas no
+> formulário da instituição de ensino.
+
+### 🎥 Demonstração
+
+A demonstração acadêmica apresenta a jornada principal do MVP:
+
+**Descobrir → Autenticar → Inscrever → Acompanhar → Sair**
+
+O material audiovisual e/ou fotográfico utilizado como evidência da
+atividade extensionista é apresentado conforme solicitado pela instituição
+de ensino.
+
+> O estado apresentado neste repositório corresponde ao **MVP acadêmico validado**
+> para a Atividade Extensionista II. O sistema está em desenvolvimento e não deve
+> ser interpretado como plataforma comercial pronta para produção.
