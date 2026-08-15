@@ -277,7 +277,16 @@ A arquitetura atual do MVP pode ser representada de forma simplificada:
 ---
 ## Status
 
-🚧 Em desenvolvimento
+🚧 **Em desenvolvimento — MVP acadêmico funcional**
+
+O projeto encontra-se em desenvolvimento e, para fins da Atividade
+Extensionista II, possui um MVP funcional com a jornada principal validada
+em ambiente local.
+
+O estado atual não representa uma plataforma comercial pronta para produção.
+
+Funcionalidades adicionais, melhorias de infraestrutura, acessibilidade,
+segurança e publicação externa permanecem planejadas para etapas futuras.
 
 ## Setup rápido (local)
 
@@ -309,7 +318,7 @@ Templates (sem secrets reais):
 
 Índice: [`docs/README.md`](./docs/README.md)
 
-
+---
 
 ## 🔗 Links do projeto
 
@@ -332,7 +341,6 @@ e materiais técnicos do projeto.
 - [Índice da documentação](./docs/README.md)
 - [Roteiro da demonstração acadêmica](./docs/testing/faculdade-mvp-demo-script.md)
 - [Checkpoint do MVP acadêmico](./docs/testing/faculdade-mvp-f6-checkpoint.md)
-- [Configuração do ambiente](./docs/setup/environment.md)
 
 ### 🧪 Documentação técnica
 
@@ -347,26 +355,13 @@ contexto da atividade, diagnóstico realizado, objetivos, metodologia,
 execução, resultados e referências utilizadas.
 
 - [Documentação da Atividade Extensionista](./docs/academic/atividade-extensionista.md)
-- [Fase 1 — Diagnóstico e público](./docs/academic/fase-1.md)
-- [Fase 2 — Ação extensionista](./docs/academic/fase-2.md)
-- [Fase 3 — Avaliação da ação](./docs/academic/fase-3.md)
+- [Fase 1 — Diagnóstico e público](./docs/academic/fase-1-diagnostico.md)
+- [Fase 2 — Ação extensionista](./docs/academic/fase-2-acao.md)
+- [Fase 3 — Avaliação da ação](./docs/academic/fase-3-avaliacao.md)
 - [Referências](./docs/academic/referencias.md)
 
 > Os documentos acadêmicos complementam as informações apresentadas no
 > formulário da instituição de ensino.
-
-Os documentos acadêmicos serão mantidos na pasta:
-
-```
-docs/
-└── academic/
-    ├── atividade-extensionista.md
-    ├── fase-1.md
-    ├── fase-2.md
-    ├── fase-3.md
-    └── referencias.md
-```
-
 
 ### 🎥 Demonstração
 
@@ -392,5 +387,4 @@ usuário poderão ser modificadas nas próximas etapas do projeto.
 
 O estado apresentado neste repositório corresponde ao MVP acadêmico
 validado para a atividade extensionista.
-
 
