@@ -375,6 +375,21 @@ de ensino.
 
 ---
 
+## 📄 Licença
+
+Este repositório está sob **licença proprietária (All Rights Reserved)**.
+O código e a documentação **não são open source** e não podem ser copiados,
+redistribuídos, utilizados comercialmente ou transformados em obras derivadas
+sem autorização prévia por escrito dos autores.
+
+A visibilidade pública é **temporária**, exclusivamente para avaliação acadêmica
+pela instituição de ensino. Após aprovação do projeto, o repositório retornará
+à visibilidade privada.
+
+Consulte o arquivo [LICENSE](./LICENSE) para os termos completos.
+
+---
+
 ## ⚠️ Aviso acadêmico
 
 Este repositório faz parte de um projeto acadêmico de graduação.
